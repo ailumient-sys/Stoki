@@ -1,6 +1,6 @@
 /* =========================================================
    views/product-form.js — PARTE 1/2
-   5 tipos de precio + campo restockeable
+   Fotos en IndexedDB (v11)
    ========================================================= */
 
 let nuevaFotos    = [];
@@ -15,9 +15,6 @@ const CAL_PRINCIPAL = 0.72;
 const TAM_SECUNDARIA = 320;
 const CAL_SECUNDARIA = 0.65;
 
-/* =========================================================
-   ABRIR: CREAR
-   ========================================================= */
 function openAddForm(){
   editandoProductoId = null;
   resetAddForm();
@@ -31,16 +28,13 @@ function openAddForm(){
   openModal('#m-add');
 }
 
-/* =========================================================
-   ABRIR: EDITAR
-   ========================================================= */
 function openEditForm(id){
   const p = window.DB.products.find(x => x.id === id);
   if(!p) return;
 
   editandoProductoId = id;
 
-  nuevaFotos    = [...(p.fotos || [])];
+  nuevaFotos    = [...getFotosProducto(p)];
   fotoPrincipal = p.fotoPrincipal || 0;
 
   let tipoBtn = 'porcentaje';
@@ -59,11 +53,8 @@ function openEditForm(id){
   $('#f-margen').value  = p.valorMargen || 0;
   $('#f-fecha').value   = todayISO();
 
-  /* Restockeable: por defecto true si no está definido */
   const checkRestock = $('#f-restockeable');
-  if(checkRestock){
-    checkRestock.checked = p.restockeable !== false;
-  }
+  if(checkRestock) checkRestock.checked = p.restockeable !== false;
 
   $('#f-seg').querySelectorAll('button').forEach(b =>
     b.classList.toggle('active', b.dataset.tipo === tipoMargen)
@@ -91,9 +82,6 @@ function openEditForm(id){
   openModal('#m-add');
 }
 
-/* =========================================================
-   RESET
-   ========================================================= */
 function resetAddForm(){
   nuevaFotos = [];
   fotoPrincipal = 0;
@@ -108,7 +96,6 @@ function resetAddForm(){
   $('#f-margen').value   = '40';
   $('#f-fecha').value    = todayISO();
 
-  /* Restockeable: por defecto marcado */
   const checkRestock = $('#f-restockeable');
   if(checkRestock) checkRestock.checked = true;
 
@@ -131,34 +118,25 @@ function resetAddForm(){
   updatePreview();
 }
 
-/* =========================================================
-   HINTS DINÁMICOS
-   ========================================================= */
 function actualizarSegHint(){
   const el = $('#f-seg-hint');
   if(!el) return;
-
   const hints = {
     porcentaje: 'Porcentaje de ganancia sobre el costo',
     fijo:       'Cuánto querés ganar',
     precio:     'Precio de venta final'
   };
-
   el.textContent = hints[tipoMargen] || '';
 }
 
 function actualizarPlaceholder(){
   const el = $('#f-margen');
   if(!el) return;
-
   if(tipoMargen === 'porcentaje')      el.placeholder = '40';
   else if(tipoMargen === 'fijo')       el.placeholder = '1';
   else if(tipoMargen === 'precio')     el.placeholder = '15';
 }
 
-/* =========================================================
-   GRILLA DE FOTOS
-   ========================================================= */
 function renderFotosGrid(){
   const cont = $('#f-fotos-grid');
   if(!cont) return;
@@ -223,7 +201,6 @@ async function marcarPrincipal(idx){
     renderFotosGrid();
     if(navigator.vibrate) navigator.vibrate(15);
     toast('⭐ Foto principal actualizada');
-
   }catch(e){
     console.error('Error al recomprimir:', e);
     fotoPrincipal = idx;
@@ -237,11 +214,9 @@ function recomprimirBase64(base64, max, quality){
     img.onload = () => {
       const { width: w, height: h } = img;
       const scale = Math.min(1, max / Math.max(w, h));
-
       const canvas = document.createElement('canvas');
       canvas.width  = Math.round(w * scale);
       canvas.height = Math.round(h * scale);
-
       canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
       resolve(canvas.toDataURL('image/jpeg', quality));
     };
@@ -251,14 +226,10 @@ function recomprimirBase64(base64, max, quality){
 
 function eliminarFoto(idx){
   if(idx < 0 || idx >= nuevaFotos.length) return;
-
   nuevaFotos.splice(idx, 1);
-
   if(fotoPrincipal === idx){ fotoPrincipal = 0; }
   else if(fotoPrincipal > idx){ fotoPrincipal--; }
-
   if(!nuevaFotos.length) fotoPrincipal = 0;
-
   renderFotosGrid();
   if(navigator.vibrate) navigator.vibrate(10);
 }
@@ -273,7 +244,6 @@ function abrirSelectorFoto(){
 async function procesarFotos(e){
   const files = [...e.target.files];
   if(!files.length) return;
-
   const espacio = MAX_FOTOS - nuevaFotos.length;
   const aProcesar = files.slice(0, espacio);
 
@@ -281,10 +251,8 @@ async function procesarFotos(e){
     try{
       const seraIndex = nuevaFotos.length;
       const esPrincipal = seraIndex === fotoPrincipal;
-
       const max = esPrincipal ? TAM_PRINCIPAL : TAM_SECUNDARIA;
       const cal = esPrincipal ? CAL_PRINCIPAL : CAL_SECUNDARIA;
-
       const base64 = await resizeImage(file, max, cal);
       nuevaFotos.push(base64);
       renderFotosGrid();
@@ -296,21 +264,16 @@ async function procesarFotos(e){
   if(files.length > espacio){
     toast(`⚠️ Solo caben ${MAX_FOTOS} fotos`);
   }
-
   e.target.value = '';
 }
 
-/* =========================================================
-   PREVIEW
-   ========================================================= */
 function updatePreview(){
   let costoU;
 
   if(editandoProductoId){
     const p = window.DB.products.find(x => x.id === editandoProductoId);
     if(!p) return;
-    const c = calc(p);
-    costoU = c.costoU;
+    costoU = calc(p).costoU;
   } else {
     const u = +$('#f-unidades').value || 0;
     const t = +$('#f-total').value    || 0;
@@ -319,19 +282,16 @@ function updatePreview(){
 
   const valor    = +$('#f-margen').value || 0;
   const unidades = +$('#f-unidades').value || 0;
-
   let precioVenta = costoU;
 
   if(tipoMargen === 'porcentaje'){
     precioVenta = costoU * (1 + valor / 100);
-
   } else if(tipoMargen === 'fijo'){
     if(margenScope === 'lote'){
       precioVenta = costoU + (unidades > 0 ? valor / unidades : 0);
     } else {
       precioVenta = costoU + valor;
     }
-
   } else if(tipoMargen === 'precio'){
     if(margenScope === 'lote'){
       precioVenta = unidades > 0 ? valor / unidades : 0;
@@ -359,7 +319,7 @@ function updatePreview(){
       </div>
       <div class="div"></div>
       <div class="hint" style="margin:0;padding-top:6px;font-size:11px">
-        El costo y las unidades se modifican con "📦 Reabastecer" en el detalle.
+        El costo y las unidades se modifican con "📦 Reabastecer".
       </div>`;
   } else {
     $('#f-preview').innerHTML = `
@@ -381,9 +341,10 @@ function updatePreview(){
         <span>+${fmt(gananciaU * (unidades || 0))}</span>
       </div>`;
   }
-}
+     }
 /* =========================================================
    views/product-form.js — PARTE 2/2
+   Guardar con IndexedDB
    ========================================================= */
 
 function escanearCodigoForm(){
@@ -391,57 +352,45 @@ function escanearCodigoForm(){
     const existe = window.DB.products.find(p =>
       p.codigoBarras === code && p.id !== editandoProductoId
     );
-
     if(existe){
       toast(`⚠️ Código ya asignado a "${existe.nombre}"`);
       return;
     }
-
     $('#f-codigo').value = code;
     toast(`✅ Código escaneado`);
   });
 }
 
 function initProductForm(){
-  /* Segmento principal (3 botones) */
   $('#f-seg').addEventListener('click', e => {
     const btn = e.target.closest('button');
     if(!btn) return;
-
     tipoMargen = btn.dataset.tipo;
-
     $('#f-seg').querySelectorAll('button').forEach(b =>
       b.classList.toggle('active', b === btn)
     );
-
     const scopeEl = $('#f-scope');
     if(scopeEl){
       scopeEl.style.display = (tipoMargen === 'porcentaje') ? 'none' : 'flex';
     }
-
     actualizarSegHint();
     actualizarPlaceholder();
     updatePreview();
   });
 
-  /* Sub-segmento scope */
   const scopeEl = $('#f-scope');
   if(scopeEl){
     scopeEl.addEventListener('click', e => {
       const btn = e.target.closest('button');
       if(!btn) return;
-
       margenScope = btn.dataset.scope;
-
       scopeEl.querySelectorAll('button').forEach(b =>
         b.classList.toggle('active', b === btn)
       );
-
       updatePreview();
     });
   }
 
-  /* Costo enlazado */
   $('#f-total').addEventListener('input', () => {
     const u = +$('#f-unidades').value || 0;
     const t = +$('#f-total').value    || 0;
@@ -465,10 +414,7 @@ function initProductForm(){
   $('#f-save').addEventListener('click', guardarProducto);
 }
 
-/* =========================================================
-   GUARDAR
-   ========================================================= */
-function guardarProducto(){
+async function guardarProducto(){
   const nombre   = $('#f-nombre').value.trim();
   const codigo   = $('#f-codigo').value.trim();
   const valor    = +$('#f-margen').value || 0;
@@ -476,7 +422,6 @@ function guardarProducto(){
   const checkRestock = $('#f-restockeable');
   const restockeable = checkRestock ? checkRestock.checked : true;
 
-  /* Combinar botón + scope */
   let tipoFinal = 'porcentaje';
   let unidadesMargen = null;
 
@@ -484,14 +429,10 @@ function guardarProducto(){
     tipoFinal = 'porcentaje';
   } else if(tipoMargen === 'fijo'){
     tipoFinal = (margenScope === 'lote') ? 'fijo-lote' : 'fijo';
-    if(tipoFinal === 'fijo-lote'){
-      unidadesMargen = +$('#f-unidades').value || 0;
-    }
+    if(tipoFinal === 'fijo-lote') unidadesMargen = +$('#f-unidades').value || 0;
   } else if(tipoMargen === 'precio'){
     tipoFinal = (margenScope === 'lote') ? 'precio-lote' : 'precio';
-    if(tipoFinal === 'precio-lote'){
-      unidadesMargen = +$('#f-unidades').value || 0;
-    }
+    if(tipoFinal === 'precio-lote') unidadesMargen = +$('#f-unidades').value || 0;
   }
 
   /* -------- EDITAR -------- */
@@ -511,8 +452,8 @@ function guardarProducto(){
     }
 
     p.nombre        = nombre || '(sin nombre)';
-    p.fotos         = [...nuevaFotos];
     p.fotoPrincipal = fotoPrincipal;
+    p.cantidadFotos = nuevaFotos.length;
     p.tipoMargen    = tipoFinal;
     p.valorMargen   = valor;
     p.codigoBarras  = codigo || null;
@@ -522,6 +463,14 @@ function guardarProducto(){
       p.unidadesMargen = unidadesMargen;
     } else {
       delete p.unidadesMargen;
+    }
+
+    try{
+      await guardarFotosProducto(p.id, nuevaFotos);
+      window.FOTOS[p.id] = [...nuevaFotos];
+    }catch(e){
+      console.error('Error al guardar fotos:', e);
+      return toast('⚠️ No se pudieron guardar las fotos');
     }
 
     saveDB();
@@ -536,9 +485,7 @@ function guardarProducto(){
   const u = +$('#f-unidades').value || 0;
   const t = +$('#f-total').value    || 0;
 
-  if(!nombre && !codigo){
-    return toast('⚠️ Poné nombre o escaneá un código');
-  }
+  if(!nombre && !codigo) return toast('⚠️ Poné nombre o escaneá un código');
   if(u <= 0) return toast('⚠️ Indica cuántas unidades');
   if(t <= 0) return toast('⚠️ Indica el costo de compra');
 
@@ -561,8 +508,8 @@ function guardarProducto(){
   const producto = {
     id: uid(),
     nombre: nombre || '(sin nombre)',
-    fotos: [...nuevaFotos],
     fotoPrincipal: fotoPrincipal,
+    cantidadFotos: nuevaFotos.length,
     tipoMargen: tipoFinal,
     valorMargen: valor,
     codigoBarras: codigo || null,
@@ -577,6 +524,14 @@ function guardarProducto(){
     producto.unidadesMargen = unidadesMargen;
   }
 
+  try{
+    await guardarFotosProducto(producto.id, nuevaFotos);
+    window.FOTOS[producto.id] = [...nuevaFotos];
+  }catch(e){
+    console.error('Error al guardar fotos:', e);
+    return toast('⚠️ No se pudieron guardar las fotos');
+  }
+
   window.DB.products.push(producto);
 
   saveDB();
@@ -584,4 +539,4 @@ function guardarProducto(){
   closeModal('#m-add');
   toast('✅ Producto guardado');
   setTab(1);
-}
+     }
