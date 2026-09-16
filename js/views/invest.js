@@ -1,5 +1,5 @@
 /* =========================================================
-   views/invest.js — PARTE 1/2
+   views/invest.js — PARTE 1/3
    ========================================================= */
 
 let invNuevaFotos    = [];
@@ -127,7 +127,6 @@ function buildListaVacia(){
     </div>`;
 }
 
-/* ---------- Precio de venta de un temp ---------- */
 function precioVentaTemp(p){
   const costoU = p.costoUnitario;
   const valor = Number(p.valorMargen) || 0;
@@ -265,9 +264,6 @@ function calcSesion(){
   };
 }
 
-/* =========================================================
-   MODAL CAPITAL
-   ========================================================= */
 function openInvestCapital(modo){
   const s = window.SESSION;
 
@@ -353,9 +349,9 @@ function saveInvestCapital(){
   closeModal('#m-capital');
   window.capModo = null;
   renderInvest();
-}
+     }
 /* =========================================================
-   views/invest.js — PARTE 2/2
+   views/invest.js — PARTE 2/3
    ========================================================= */
 
 function openInvestProduct(tempId){
@@ -387,7 +383,6 @@ function openInvestProduct(tempId){
     $('#ip-unit').value        = p.costoUnitario.toFixed(2);
     $('#ip-margen').value      = p.valorMargen;
 
-    /* Restockeable: por defecto true si no está definido */
     const checkRestock = $('#ip-restockeable');
     if(checkRestock){
       checkRestock.checked = p.restockeable !== false;
@@ -419,7 +414,6 @@ function openInvestProduct(tempId){
     $('#ip-unit').value        = '';
     $('#ip-margen').value      = '40';
 
-    /* Restockeable: marcado por defecto */
     const checkRestock = $('#ip-restockeable');
     if(checkRestock) checkRestock.checked = true;
 
@@ -444,7 +438,6 @@ function openInvestProduct(tempId){
   openModal('#m-invest-product');
 }
 
-/* ---------- Hints dinámicos ---------- */
 function actualizarSegHintInv(){
   const el = $('#ip-seg-hint');
   if(!el) return;
@@ -781,9 +774,12 @@ function openFinishPurchase(){
   }).join('');
 
   openModal('#m-finish');
-}
+       }
+/* =========================================================
+   views/invest.js — PARTE 3/3
+   ========================================================= */
 
-function finishPurchase(){
+async function finishPurchase(){
   const s = window.SESSION;
   if(!s || !s.activa) return;
 
@@ -796,9 +792,9 @@ function finishPurchase(){
 
   let creados = 0;
 
-  seleccionados.forEach(tempId => {
+  for(const tempId of seleccionados){
     const tmp = s.productos.find(p => p.tempId === tempId);
-    if(!tmp) return;
+    if(!tmp) continue;
 
     const lote = {
       id: 'lote_' + uid(),
@@ -808,11 +804,14 @@ function finishPurchase(){
       costoUnitario: tmp.costoUnitario
     };
 
+    const nuevoId = uid();
+    const fotos = tmp.fotos || [];
+
     const producto = {
-      id: uid(),
+      id: nuevoId,
       nombre: tmp.nombre || '(sin nombre)',
-      fotos: tmp.fotos || [],
       fotoPrincipal: tmp.fotoPrincipal || 0,
+      cantidadFotos: fotos.length,
       tipoMargen: tmp.tipoMargen,
       valorMargen: tmp.valorMargen,
       codigoBarras: tmp.codigoBarras || null,
@@ -827,9 +826,16 @@ function finishPurchase(){
       producto.unidadesMargen = tmp.unidadesMargen;
     }
 
+    try{
+      await guardarFotosProducto(nuevoId, fotos);
+      window.FOTOS[nuevoId] = [...fotos];
+    }catch(e){
+      console.warn('Error al guardar fotos de', nuevoId, e);
+    }
+
     window.DB.products.push(producto);
     creados++;
-  });
+  }
 
   saveDB();
   clearSession();
