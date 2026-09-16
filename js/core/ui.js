@@ -1,6 +1,6 @@
 /* =========================================================
    core/ui.js — helpers de interfaz
-   Selectores, toast, modales, imágenes, confirmación custom
+   v11: getFotosProducto/getFotoPrincipal leen de IndexedDB
    ========================================================= */
 
 const $  = s => document.querySelector(s);
@@ -10,10 +10,8 @@ let toastTimer;
 function toast(msg){
   const t = $('#toast');
   if(!t) return;
-
   t.textContent = msg;
   t.classList.add('show');
-
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => t.classList.remove('show'), 1900);
 }
@@ -30,17 +28,9 @@ function closeModal(el){
 
 /* =========================================================
    CONFIRMACIÓN CUSTOM
-   Uso: const ok = await confirmarAccion({
-     titulo: 'Eliminar producto',
-     mensaje: 'Esta acción no se puede deshacer.',
-     botonOk: 'Eliminar',
-     colorOk: 'rojo'   // 'rojo' | 'verde' | 'neutral'
-   });
-   if(!ok) return;
    ========================================================= */
 function confirmarAccion(opciones){
   return new Promise(resolve => {
-    /* Cerrar cualquier confirm previo */
     const prev = document.querySelector('#m-confirm');
     if(prev) prev.remove();
 
@@ -49,7 +39,7 @@ function confirmarAccion(opciones){
     const mensaje = opt.mensaje || '';
     const botonOk = opt.botonOk || 'Confirmar';
     const botonCancel = opt.botonCancel || 'Cancelar';
-    const colorOk = opt.colorOk || 'rojo';   /* rojo | verde | neutral */
+    const colorOk = opt.colorOk || 'rojo';
 
     const claseBoton = colorOk === 'verde' ? 'btn-main'
                      : colorOk === 'neutral' ? 'btn-ghost'
@@ -123,8 +113,24 @@ function resizeImage(file, max, quality = 0.72){
   });
 }
 
+/* Devuelve el array de fotos del producto (base64) */
+function getFotosProducto(p){
+  if(!p) return [];
+
+  /* 1. Caché en memoria (IndexedDB) */
+  const cached = window.FOTOS && window.FOTOS[p.id];
+  if(cached && cached.length) return cached;
+
+  /* 2. Compatibilidad: si aún tiene fotos en localStorage */
+  if(Array.isArray(p.fotos) && p.fotos.length) return p.fotos;
+
+  return [];
+}
+
+/* Devuelve la foto principal (base64) o null */
 function getFotoPrincipal(p){
-  if(!p || !Array.isArray(p.fotos) || !p.fotos.length) return null;
+  const fotos = getFotosProducto(p);
+  if(!fotos.length) return null;
   const idx = typeof p.fotoPrincipal === 'number' ? p.fotoPrincipal : 0;
-  return p.fotos[idx] || p.fotos[0] || null;
+  return fotos[idx] || fotos[0] || null;
 }
