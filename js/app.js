@@ -4,16 +4,13 @@
    Vender (1), Inventario (2), Pedidos (5), Facturar (3) + ☰ Más
    En "Más": Invertir (0), Estadísticas (4), Clientes (6),
              Proveedores (7)
+   v11: precargarFotos() desde IndexedDB al arrancar
    ========================================================= */
 
 let currentTab = 0;
 
-/* Pestañas que se acceden desde el menú "Más" */
 const MORE_TABS = [0, 4, 6, 7];
 
-/* =========================================================
-   CAMBIO DE PESTAÑA
-   ========================================================= */
 function setTab(i){
   if(i < 0 || i > 7) return;
   currentTab = i;
@@ -22,13 +19,11 @@ function setTab(i){
     view.style.display = (idx === i) ? 'block' : 'none';
   });
 
-  /* Marcar el botón activo del nav (por data-tab) */
   $$('.nav-btn[data-tab]').forEach(btn => {
     if(btn.id === 'nav-more') return;
     btn.classList.toggle('active', +btn.dataset.tab === i);
   });
 
-  /* El botón "Más" se activa si estamos en una pestaña del menú */
   const moreBtn = document.querySelector('#nav-more');
   if(moreBtn){
     moreBtn.classList.toggle('active', MORE_TABS.includes(i));
@@ -69,9 +64,6 @@ function renderAll(){
   if(typeof updateCartFab === 'function')    updateCartFab();
 }
 
-/* =========================================================
-   SWIPE
-   ========================================================= */
 let swipeX = 0, swipeY = 0, swiping = false;
 
 function initSwipe(){
@@ -98,9 +90,6 @@ function initSwipe(){
   }, { passive: true });
 }
 
-/* =========================================================
-   TAP + LONG-PRESS
-   ========================================================= */
 let tapState = {
   timer: null,
   startX: 0,
@@ -209,9 +198,6 @@ function handleLongPress(el, tipo){
   }
 }
 
-/* =========================================================
-   BLOQUEOS GLOBALES
-   ========================================================= */
 function initGestosBloqueados(){
   document.addEventListener('contextmenu', e => e.preventDefault());
   document.addEventListener('dragstart',   e => e.preventDefault());
@@ -231,9 +217,6 @@ function initGestosBloqueados(){
   }, { passive: false });
 }
 
-/* =========================================================
-   FAB DINÁMICO
-   ========================================================= */
 function initFab(){
   const fab = $('#fab');
   if(!fab) return;
@@ -249,11 +232,7 @@ function initFab(){
   });
 }
 
-/* =========================================================
-   EVENTOS GLOBALES
-   ========================================================= */
 function initGlobalEvents(){
-  /* Nav: 4 tabs + botón "Más" */
   const nav = $('#bottom-nav');
   if(nav){
     nav.addEventListener('click', e => {
@@ -321,9 +300,6 @@ function initGlobalEvents(){
   });
 }
 
-/* =========================================================
-   TASA DEL DÍA
-   ========================================================= */
 function initTasa(){
   const btn = $('#btn-tasa');
   if(btn) btn.addEventListener('click', openTasaModal);
@@ -443,9 +419,6 @@ function updateTasaBtn(){
   btn.classList.toggle('activa', (window.DB.settings.tasaDia || 0) > 0);
 }
 
-/* =========================================================
-   BOTÓN FÍSICO ATRÁS (Android)
-   ========================================================= */
 function initBackButton(){
   try{
     const CapApp = window.Capacitor?.Plugins?.App;
@@ -509,9 +482,6 @@ function initBackButton(){
   }
 }
 
-/* =========================================================
-   STATUS BAR Y SPLASH (Android nativo)
-   ========================================================= */
 function initStatusBar(){
   const sb = window.Capacitor?.Plugins?.StatusBar;
   if(!sb) return;
@@ -531,19 +501,21 @@ function initSplash(){
   }catch(e){ console.warn('SplashScreen no disponible', e); }
 }
 
-/* =========================================================
-   HELPER SAFE INIT
-   ========================================================= */
 function safeInit(nombre, fn){
   try{ fn(); }
   catch(e){ console.warn(`[init] Falló "${nombre}":`, e); }
 }
 
-/* =========================================================
-   ARRANQUE
-   ========================================================= */
 function init(){
   safeInit('loadDB',      () => loadDB());
+
+  safeInit('fotos', () => {
+    if(typeof precargarFotos !== 'function') return;
+    precargarFotos().then(() => {
+      if(typeof renderAll === 'function') renderAll();
+    }).catch(e => console.warn('[init] precargarFotos falló:', e));
+  });
+
   safeInit('loadSession', () => loadSession());
   safeInit('loadCarrito', () => loadCarrito());
 
