@@ -3,6 +3,7 @@
    búsqueda, escaneo, ordenamiento y alertas de stock.
    + Botón Exportar PDF
    + Botón Exportar Catálogo
+   v11: badge de fotos lee de IndexedDB vía getFotosProducto()
    ========================================================= */
 
 let invModoOrden = 'recientes';
@@ -192,8 +193,10 @@ function inventoryItemHTML(p){
   const thumb = buildInvThumb(p);
   const corazon = p.favorito ? '❤️' : '🤍';
 
-  const badgeFotos = (p.fotos && p.fotos.length > 1)
-    ? `<span class="badge-fotos">📷 ${p.fotos.length}</span>`
+  /* Leer cantidad de fotos desde IndexedDB (vía caché) */
+  const cantFotos = getFotosProducto(p).length;
+  const badgeFotos = (cantFotos > 1)
+    ? `<span class="badge-fotos">📷 ${cantFotos}</span>`
     : '';
 
   return `
@@ -345,4 +348,4 @@ function toggleFavorito(id){
 
   renderInventario();
   toast(p.favorito ? '❤️ Marcado como favorito' : '🤍 Favorito quitado');
-}
+    }
