@@ -1,0 +1,29 @@
+{
+  "appId": "com.stoki.app",
+  "appName": "Stoki",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false,
+    "backgroundColor": "#0f1115"
+  },
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0f1115",
+      "overlaysWebView": false
+    },
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#0f1115",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    }
+  }
+}
+

@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <meta name="theme-color" content="#0f1115">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
+  <title>Stoki — Invertir, Inventario y Ventas</title>
+  <link rel="manifest" href="manifest.json">
+
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/views.css">
+  <link rel="stylesheet" href="css/modals.css">
+  <link rel="stylesheet" href="css/misc.css">
+  <link rel="stylesheet" href="css/views-orders.css">
+  <link rel="stylesheet" href="css/views-clients.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js" defer></script>
+</head>
+<body>
+
+<header>
+  <div class="top">
+    <div class="logo">Stok<span>i</span></div>
+
+    <div class="top-right">
+      <button class="btn-tasa" id="btn-business" aria-label="Datos del negocio">🏪</button>
+      <button class="btn-tasa" id="btn-tasa" aria-label="Tasa del día">💱</button>
+      <select class="cur" id="currency">
+        <option value="USD">USD $</option>
+        <option value="VES">VES Bs</option>
+        <option value="COP">COP $</option>
+        <option value="MXN">MXN $</option>
+        <option value="ARS">ARS $</option>
+        <option value="CLP">CLP $</option>
+        <option value="PEN">PEN S/</option>
+        <option value="EUR">EUR €</option>
+      </select>
+    </div>
+  </div>
+</header>
+
+<div class="views" id="views">
+  <section class="view" id="v-invest"></section>
+  <section class="view" id="v-prod"></section>
+  <section class="view" id="v-inv"></section>
+  <section class="view" id="v-bill"></section>
+  <section class="view" id="v-stats"></section>
+  <section class="view" id="v-orders"></section>
+  <section class="view" id="v-clients"></section>
+  <section class="view" id="v-suppliers"></section>
+</div>
+
+<button class="fab hidden" id="fab" aria-label="Agregar">+</button>
+
+<button class="cart-fab hidden" id="cart-fab" aria-label="Ver carrito">
+  <span class="cart-fab-icon">🛒</span>
+  <span class="cart-fab-info">
+    <span class="cart-fab-count" id="cart-fab-count">0</span>
+    <span class="cart-fab-monto" id="cart-fab-monto">$0</span>
+    <span class="cart-fab-ref" id="cart-fab-ref"></span>
+  </span>
+</button>
+
+<nav class="bottom-nav" id="bottom-nav">
+  <button class="nav-btn" data-tab="1">
+    <span class="nav-icon">🛒</span>
+    <span class="nav-label">Vender</span>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-btn" data-tab="2">
+    <span class="nav-icon">📊</span>
+    <span class="nav-label">Inventario</span>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-btn" data-tab="5">
+    <span class="nav-icon">📦</span>
+    <span class="nav-label">Pedidos</span>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-btn" data-tab="3">
+    <span class="nav-icon">🧾</span>
+    <span class="nav-label">Facturar</span>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-btn" id="nav-more" data-tab="more">
+    <span class="nav-icon">☰</span>
+    <span class="nav-label">Más</span>
+    <span class="nav-dot"></span>
+  </button>
+</nav>
+
+<!-- MODAL: AGREGAR/EDITAR PRODUCTO -->
+<div class="overlay" id="m-add">
+  <div class="sheet" style="position:relative">
+    <div class="sheet-handle"></div>
+    <button class="x" data-close aria-label="Cerrar">✕</button>
+    <h2 id="f-title">Nuevo producto</h2>
+    <div class="sub" id="f-sub">Registra tu compra y la app calcula el precio de venta.</div>
+
+    <label>
+      Fotos del producto
+      <span id="f-fotos-count" style="color:var(--dim);font-weight:600;text-transform:none;letter-spacing:0">(0/6)</span>
+    </label>
+    <div class="fotos-grid" id="f-fotos-grid"></div>
+    <input type="file" id="f-file" accept="image/*" multiple>
+
+    <label>Nombre del producto</label>
+    <input id="f-nombre" placeholder="Ej: Audífonos BT X3" autocomplete="off">
+
+    <label>Código de barras <span style="color:var(--dim);text-transform:none;font-weight:600">(opcional)</span></label>
+    <div class="input-with-scan">
+      <input id="f-codigo" placeholder="Escaneá o escribí el código" autocomplete="off">
+      <button class="btn-scan-inline" id="f-scan" type="button" aria-label="Escanear">📷</button>
+    </div>
+
+    <div class="solo-nuevo">
+      <label>¿Cuántas unidades compraste?</label>
+      <input id="f-unidades" type="number" inputmode="numeric" placeholder="20" min="1">
+
+      <div class="row2">
+        <div>
+          <label>Precio total pagado</label>
+          <input id="f-total" type="number" inputmode="decimal" placeholder="0" min="0">
+        </div>
+        <div>
+          <label>Precio por unidad</label>
+          <input id="f-unit" type="number" inputmode="decimal" placeholder="0" min="0">
+        </div>
+      </div>
+
+      <label>Fecha de compra</label>
+      <input id="f-fecha" type="date">
+    </div>
+
+    <label>Precio de venta</label>
+    <div class="seg seg-3" id="f-seg">
+      <button class="active" data-tipo="porcentaje">%</button>
+      <button data-tipo="fijo">$</button>
+      <button data-tipo="precio">💵</button>
+    </div>
+    <div class="seg-hint" id="f-seg-hint">Porcentaje de ganancia</div>
+
+    <div class="seg seg-sub" id="f-scope" style="display:none">
+      <button class="active" data-scope="unidad">📊 Por unidad</button>
+      <button data-scope="lote">📦 Por lote</button>
+    </div>
+    <input id="f-margen" type="number" inputmode="decimal" placeholder="40" style="margin-top:8px">
+
+    <label class="check-row">
+      <input type="checkbox" id="f-restockeable" checked>
+      <span>📦 Es restockeable — se puede volver a comprar</span>
+    </label>
+
+    <div class="preview" id="f-preview"></div>
+
+    <button class="btn-main" id="f-save">Guardar producto</button>
+  </div>
+</div>
+
+<!-- MODAL: DETALLE -->
+<div class="overlay centered" id="m-detail">
+  <div class="sheet" style="position:relative">
+    <button class="x" data-close aria-label="Cerrar">✕</button>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<!-- MODAL: VENDER -->
+<div class="overlay" id="m-sell">
+  <div class="sheet" style="position:relative">
+    <div class="sheet-handle"></div>
+    <button class="x" data-close aria-label="Cerrar">✕</button>
+    <h2 id="sell-title">Registrar venta</h2>
+    <div class="sub" id="sell-sub"></div>
+
+    <label>Cantidad vendida</label>
+    <input id="s-cant" type="number" inputmode="numeric" value="1" min="1">
+
+    <label>Precio por unidad</label>
+    <input id="s-precio" type="number" inputmode="decimal">
+
+    <label>Fecha</label>
+    <input id="s-fecha" type="date">
+
+    <div class="preview" id="s-preview"></div>
+    <button class="btn-main" id="s-save">Registrar venta</button>
+  </div>
+</div>
+
+<!-- MODAL: CONFIRMAR PAGO -->
+<div class="overlay centered" id="m-confirm-sale">
+  <div class="sheet" style="position:relative">
+    <button class="x" data-close aria-label="Cerrar">✕</button>
+    <div class="confirm-icon">💵</div>
+    <h2 style="text-align:center">Confirmar pago</h2>
+    <div class="sub" style="text-align:center">
+      El monto total a cobrar es
+    </div>
+    <div class="confirm-monto" id="confirm-monto">$0,00</div>
+    <div class="confirm-ref" id="confirm-ref"></div>
+
+    <div class="confirm-detalle" id="confirm-detalle"></div>
+
+    <label>Cliente <span style="color:var(--dim);text-transform:none;font-weight:600">(opcional)</span></label>
+
+    <div class="cli-picker" id="confirm-cli-picker">
+      <button type="button" class="cli-picker-display" id="confirm-cli-display">
+        <span class="cli-picker-icon">👤</span>
+        <span class="cli-picker-text" id="confirm-cli-text">Sin cliente asignado</span>
+        <span class="cli-picker-chevron" id="confirm-cli-chevron">▾</span>
+      </button>
+
+      <div class="cli-picker-panel" id="confirm-cli-panel">
+        <input type="text"
+               id="confirm-cli-search"
+               placeholder="Buscar cliente..."
+               autocomplete="off"
+               class="cli-picker-search">
+
+        <button type="button" class="cli-picker-nuevo" id="confirm-cli-nuevo">
+          ➕ Agregar nuevo cliente
+        </button>
+
+        <div class="cli-picker-list" id="confirm-cli-list"></div>
+      </div>
+    </div>
+
+    <div class="cli-form" id="confirm-cli-form" style="display:none">
+      <label>Nombre</label>
+      <input id="confirm-nuevo-nombre" placeholder="Ej: María Pérez" autocomplete="off">
+
+      <label>Cédula / ID <span style="color:var(--dim);text-transform:none;font-weight:600">(opcional)</span></label>
+      <input id="confirm-nuevo-cedula" placeholder="Ej: V-12345678" autocomplete="off">
+
+      <label>Teléfono <span style="color:var(--dim);text-transform:none;font-weight:600">(opcional)</span></label>
+      <input id="confirm-nuevo-telefono" type="tel" placeholder="Ej: 0412-1234567" autocomplete="off">
+
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button type="button" class="btn-ghost" id="confirm-nuevo-cancel"
+                style="margin-top:0;flex:1">
+          Cancelar
+        </button>
+        <button type="button" class="btn-main" id="confirm-nuevo-save"
+                style="margin-top:0;flex:1">
+          Guardar cliente
+        </button>
+      </div>
+    </div>
+
+    <label class="check-row" style="margin-top:16px">
+      <input type="checkbox" id="confirm-efectivo">
+      <span>💵 Pago en efectivo</span>
+    </label>
+
+    <button class="btn-main" id="confirm-sale-ok">
+      ✅ Sí, cobrar y guardar
+    </button>
+    <button class="btn-ghost" id="confirm-sale-back">
+      ← Volver a editar
+    </button>
+  </div>
+</div>
+
+<!-- MODAL: REABASTECER -->
+<div class="overlay" id="m-restock">
+  <div class="sheet" style="position:relative">
+    <div class="sheet-handle"></div>
+    <button class="x" data-close aria-label="Cerrar">✕</button>
+    <h2 id="restock-title">Reabastecer</h2>
+    <div class="sub" id="restock-sub"></div>
+
+    <div class="restock-history" id="restock-history"></div>
+
+    <div id="restock-proveedores"></div>
+
+    <label>¿Cuántas unidades compraste?</label>
+    <input id="r-unidades" type="number" inputmode="numeric" placeholder="10" min="1">
+
+    <div class="row2">
+      <div>
+        <label>Precio total pagado</label>
+        <input id="r-total" type="number" inputmode="decimal" placeholder="0" min="0">
+      </div>
+      <div>
+        <label>Precio por unidad</label>
+        <input id="r-unit" type="number" inputmode="decimal" placeholder="0" min="0">
+      </div>
+    </div>
+
+    <label>Fecha de compra</label>
+    <input id="r-fecha" type="date">
+
+    <div class="preview" id="r-preview"></div>
+    <div class="restock-alert" id="restock-alert"></div>
+    <button class="btn-main" id="r-save">Reabastecer</button>
+  </div>
+</div>
+
+<!-- MODAL: ESTADÍSTICAS POR PRODUCTO -->
+<div class="overlay" id="m-stats">
+  <div class="sheet" style="position:relative">
+    <div class="sheet-handle"></div>
+    <button class="x" data-close aria-label="Cerrar">✕</button>
+    <div id="stats-body"></div>
+  </div>
+</div>
+
+<!-- MODAL: CAPITAL -->
+<div class="overlay centered" id="m-capital">
+  <div class="sheet" style="position:relative">
+    <button class="x" data-close aria-label="Cerrar">✕</button>
+    <h2 id="cap-title">¿Cuánto vas a invertir?</h2>
+    <div class="sub" id="cap-sub">Ingresá el capital que tenés disponible.</div>
+
+    <label>Capital</label>
+    <input id="cap-input" type="number" inputmode="decimal" placeholder="100" min="0">
+
+    <button class="btn-main" id="cap-save">Empezar a invertir</button>
+  </div>
+</div>
+
+<!-- MODAL: PRODUCTO TEMPORAL (Invertir) -->
+<div class="overlay" id="m-invest-product">
+  <div class="sheet" style="position:relative">
+    <div class="sheet-handle"></div>
+    <button class="x" data-close aria-label="Cerrar">✕</button>
+    <h2 id="ip-title">Agregar producto</h2>
+    <div class="sub" id="ip-sub">Se sumará a tu lista de compra</div>
+
+    <label>
+      Fotos del producto
+      <span id="ip-fotos-count" style="color:var(--dim);font-weight:600;text-transform:none;letter-spacing:0">(0/6)</span>
+    </label>
+    <div class="fotos-grid" id="ip-fotos-grid"></div>
+    <input type="file" id="ip-file" accept="image/*" multiple>
+
+    <label>Nombre del producto</label>
+    <input id="ip-nombre" placeholder="Ej: Audífonos BT X3" autocomplete="off">
+
+    <label>Código de barras <span style="color:var(--dim);text-transform:none;font-weight:600">(opcional)</span></label>
+    <div class="input-with-scan">
+      <input id="ip-codigo" placeholder="Escaneá o escribí el código" autocomplete="off">
+      <button class="btn-scan-inline" id="ip-scan" type="button" aria-label="Escanear">📷</button>
+    </div>
+
+    <label>¿Cuántas unidades compraste?</label>
+    <input id="ip-unidades" type="number" inputmode="numeric" placeholder="10" min="1">
+
+    <div class="row2">
+      <div>
+        <label>Precio total pagado</label>
+        <input id="ip-total" type="number" inputmode="decimal" placeholder="0" min="0">
+      </div>
+      <div>
+        <label>Precio por unidad</label>
+        <input id="ip-unit" type="number" inputmode="decimal" placeholder="0" min="0">
+      </div>
+    </div>
+
+    <label>Precio de venta</label>
+    <div class="seg seg-3" id="ip-seg">
+      <button class="active" data-tipo="porcentaje">%</button>
+      <button data-tipo="fijo">$</button>
+      <button data-tipo="precio">💵</button>
+    </div>
+    <div class="seg-hint" id="ip-seg-hint">Porcentaje de ganancia</div>
+
+    <div class="seg seg-sub" id="ip-scope" style="display:none">
+      <button class="active" data-scope="unidad">📊 Por unidad</button>
+      <button data-scope="lote">📦 Por lote</button>
+    </div>
+    <input id="ip-margen" type="number" inputmode="decimal" placeholder="40" style="margin-top:8px">
+
+    <label class="check-row">
+      <input type="checkbox" id="ip-restockeable" checked>
+      <span>📦 Es restockeable — se puede volver a comprar</span>
+    </label>
+
+    <div class="preview" id="ip-preview"></div>
+
+    <button class="btn-main" id="ip-save">Agregar a la lista</button>
+  </div>
+</div>
+
+<!-- MODAL: FINALIZAR COMPRA -->
+<div class="overlay" id="m-finish">
+  <div class="sheet" style="position:relative">
+    <div class="sheet-handle"></div>
+    <button class="x" data-close aria-label="Cerrar">✕</button>
+    <h2>Confirmar compra</h2>
+    <div class="sub" id="finish-sub"></div>
+
+    <div class="finish-list-title">¿Cuáles querés agregar al catálogo?</div>
+    <div id="finish-list"></div>
+
+    <button class="btn-main" id="finish-save">Confirmar y agregar al catálogo</button>
+  </div>
+</div>
+
+<!-- MODAL: ESCÁNER -->
+<div class="overlay centered scanner-overlay" id="m-scan">
+  <div class="scanner-wrap">
+    <div class="scanner-top">
+      <div class="scanner-title">Escanear código</div>
+      <button class="scanner-close" id="scan-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div id="scanner-reader" class="scanner-reader"></div>
+    <div class="scanner-hint">Apuntá al código de barras</div>
+  </div>
+</div>
+
+<!-- MODAL: TASA DEL DÍA -->
+<div class="overlay centered" id="m-tasa">
+  <div class="sheet" style="position:relative">
+    <button class="x" data-close aria-label="Cerrar">✕</button>
+    <h2>💱 Tasa del día</h2>
+    <div class="sub" id="tasa-sub">Actualizá la tasa de referencia.</div>
+
+    <label>Moneda principal</label>
+    <div class="tasa-readonly" id="tasa-principal">USD</div>
+
+    <label>Moneda de referencia</label>
+    <select id="tasa-ref">
+      <option value="VES">VES Bs</option>
+      <option value="COP">COP $</option>
+      <option value="ARS">ARS $</option>
+      <option value="MXN">MXN $</option>
+      <option value="PEN">PEN S/</option>
+      <option value="CLP">CLP $</option>
+    </select>
+
+    <label>¿Cuántos <span id="tasa-ref-label">Bs</span> vale 1 <span id="tasa-principal-label">USD</span>?</label>
+    <input id="tasa-input" type="number" inputmode="decimal" placeholder="40.00" min="0" step="0.01">
+
+    <div class="tasa-hint" id="tasa-hint">
+      Última actualización: nunca
+    </div>
+
+    <button class="btn-main" id="tasa-save">Guardar tasa</button>
+    <button class="btn-ghost btn-danger" id="tasa-clear" style="display:none">
+      Desactivar referencia
+    </button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/core/storage.js"></script>
+<script src="js/core/format.js"></script>
+<script src="js/core/ui.js"></script>
+<script src="js/core/scanner.js"></script>
+
+<script src="js/calc.js"></script>
+
+<script src="js/lib/charts.js"></script>
+
+<script src="js/views/onboarding.js"></script>
+<script src="js/views/invest.js"></script>
+<script src="js/views/products.js"></script>
+<script src="js/views/product-form.js"></script>
+<script src="js/views/inventory.js"></script>
+<script src="js/views/inventory-pdf.js"></script>
+<script src="js/views/detail.js"></script>
+<script src="js/views/sell.js"></script>
+<script src="js/views/cart.js"></script>
+<script src="js/views/business.js"></script>
+<script src="js/views/ticket.js"></script>
+<script src="js/views/restock.js"></script>
+<script src="js/views/stats.js"></script>
+<script src="js/views/sales.js"></script>
+<script src="js/views/stats-page.js"></script>
+<script src="js/views/orders.js"></script>
+<script src="js/views/orders-export.js"></script>
+<script src="js/views/clients.js"></script>
+<script src="js/views/suppliers.js"></script>
+<script src="js/views/more-menu.js"></script>
+
+<script src="js/app.js"></script>
+</body>
+</html>

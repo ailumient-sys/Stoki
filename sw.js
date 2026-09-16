@@ -1,0 +1,77 @@
+/* =========================================================
+   sw.js — Caché offline
+   ========================================================= */
+
+const CACHE = 'stoki-v19';
+
+const ASSETS = [
+  './',
+  './index.html',
+  './manifest.json',
+
+  './css/base.css',
+  './css/components.css',
+  './css/views.css',
+  './css/modals.css',
+  './css/misc.css',
+  './css/views-orders.css',
+
+  './js/core/storage.js',
+  './js/core/format.js',
+  './js/core/ui.js',
+  './js/core/scanner.js',
+
+  './js/calc.js',
+  './js/lib/charts.js',
+
+  './js/views/onboarding.js',
+  './js/views/invest.js',
+  './js/views/products.js',
+  './js/views/product-form.js',
+  './js/views/inventory.js',
+  './js/views/detail.js',
+  './js/views/sell.js',
+  './js/views/cart.js',
+  './js/views/business.js',
+  './js/views/ticket.js',
+  './js/views/restock.js',
+  './js/views/stats.js',
+  './js/views/sales.js',
+  './js/views/stats-page.js',
+  './js/views/orders.js',
+  './js/views/orders-export.js',
+  './css/views-clients.css',
+  './js/views/clients.js',
+  './js/views/suppliers.js',
+  './js/views/more-menu.js',
+
+  './js/app.js'
+];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(
+        keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+      )
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener('fetch', e => {
+  if(!e.request.url.startsWith(self.location.origin)){
+    return;
+  }
+
+  e.respondWith(
+    caches.match(e.request).then(cached =>
+      cached || fetch(e.request).catch(() => caches.match('./index.html'))
+    )
+  );
+});

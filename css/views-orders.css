@@ -1,0 +1,457 @@
+/* =========================================================
+   views-orders.css — Pestaña Pedidos
+   ========================================================= */
+
+/* ---------- Botón nuevo pedido ---------- */
+.btn-nuevo-pedido{
+  width:100%;
+  background:linear-gradient(135deg, #f59e0b, #d97706);
+  color:#1a1000;
+  border:0;
+  border-radius:12px;
+  padding:14px;
+  min-height:var(--touch);
+  font-size:14px;
+  font-weight:800;
+  font-family:inherit;
+  cursor:pointer;
+  box-shadow:0 4px 14px rgba(245,158,11,.3);
+  transition:filter .15s, transform .12s;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-bottom:14px;
+}
+.btn-nuevo-pedido:active{
+  filter:brightness(.9);
+  transform:scale(.98);
+}
+
+/* ---------- Secciones ---------- */
+.orders-section-title{
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  margin:16px 0 10px;
+  padding-left:4px;
+}
+.orders-section-title.activos{ color:var(--red); }
+.orders-section-title.cerrados{ color:var(--green); }
+
+/* ---------- Card de pedido ---------- */
+.order-card{
+  background:var(--bg2);
+  border-radius:14px;
+  padding:12px;
+  margin-bottom:10px;
+  box-shadow:var(--e1);
+  border-left:4px solid var(--red);
+  cursor:pointer;
+  transition:transform .12s;
+}
+.order-card:active{ transform:scale(.98); }
+
+.order-card.cerrado{
+  border-left-color:var(--green);
+  opacity:.85;
+}
+
+.order-card.cancelado{
+  border-left-color:var(--dim);
+  opacity:.55;
+}
+
+.order-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  margin-bottom:8px;
+}
+
+.order-numero{
+  font-family:'Courier New', monospace;
+  font-size:11px;
+  font-weight:900;
+  background:var(--bg3);
+  color:var(--txt);
+  padding:3px 8px;
+  border-radius:6px;
+  letter-spacing:.5px;
+}
+
+.order-fecha{
+  font-size:11px;
+  color:var(--dim);
+  font-weight:700;
+}
+
+.order-cliente{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+  font-weight:800;
+  color:var(--txt);
+  margin-bottom:6px;
+}
+
+.order-resumen{
+  font-size:11px;
+  color:var(--dim);
+  font-weight:600;
+  margin-bottom:8px;
+}
+
+.order-monto-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding-top:8px;
+  border-top:1px solid rgba(42,49,64,.5);
+}
+
+.order-total{
+  font-size:16px;
+  font-weight:900;
+  color:var(--green);
+  font-variant-numeric:tabular-nums;
+}
+
+.order-ref{
+  font-size:10px;
+  color:var(--dim);
+  font-weight:700;
+  font-variant-numeric:tabular-nums;
+  margin-top:2px;
+}
+
+/* ---------- Checks en la card ---------- */
+.order-checks-row{
+  display:flex;
+  gap:6px;
+  margin-top:10px;
+}
+
+.order-check-badge{
+  flex:1;
+  background:var(--bg3);
+  border-radius:8px;
+  padding:6px 4px;
+  text-align:center;
+  font-size:10px;
+  font-weight:800;
+  color:var(--dim);
+  border:1.5px solid transparent;
+  transition:all .15s;
+  user-select:none;
+}
+
+.order-check-badge.done{
+  background:rgba(34,197,94,.14);
+  color:var(--green);
+  border-color:rgba(34,197,94,.3);
+}
+
+.order-check-badge .order-check-icon{
+  display:block;
+  font-size:14px;
+  margin-bottom:2px;
+}
+
+/* ---------- Modal nuevo pedido ---------- */
+.ped-cliente-warning{
+  background:rgba(245,158,11,.14);
+  color:var(--amber);
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:12px;
+  font-weight:800;
+  margin-top:8px;
+  display:none;
+}
+.ped-cliente-warning.show{ display:block; }
+
+/* ---------- Detalle del pedido ---------- */
+.ped-detalle-header{
+  text-align:center;
+  margin-bottom:16px;
+  padding-bottom:14px;
+  border-bottom:1px solid var(--line);
+}
+
+.ped-numero-grande{
+  font-family:'Courier New', monospace;
+  font-size:18px;
+  font-weight:900;
+  letter-spacing:1px;
+  color:var(--txt);
+  margin-bottom:4px;
+}
+
+.ped-fecha-grande{
+  font-size:12px;
+  color:var(--dim);
+  font-weight:700;
+}
+
+.ped-cliente-box{
+  background:var(--bg3);
+  border-radius:10px;
+  padding:10px 14px;
+  font-size:13px;
+  font-weight:800;
+  text-align:center;
+  margin-top:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+}
+
+/* ---------- Items del pedido ---------- */
+.ped-items{
+  background:var(--bg3);
+  border-radius:12px;
+  padding:6px 12px;
+  margin:14px 0;
+}
+
+.ped-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 0;
+  border-bottom:1px solid rgba(42,49,64,.5);
+}
+.ped-item:last-child{ border-bottom:none; }
+
+.ped-item-info{ flex:1; min-width:0; }
+
+.ped-item-nombre{
+  font-size:13px;
+  font-weight:800;
+  margin-bottom:2px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+
+.ped-item-meta{
+  font-size:11px;
+  color:var(--dim);
+  font-weight:700;
+}
+
+.ped-item-total{
+  font-size:13px;
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  flex:0 0 auto;
+}
+
+/* ---------- Totales ---------- */
+.ped-totales{
+  background:linear-gradient(135deg, #1a2030 0%, #151b26 100%);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:16px;
+}
+
+.ped-total-line{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  font-size:14px;
+  font-weight:700;
+  color:var(--dim);
+  margin-bottom:4px;
+}
+
+.ped-total-line b{
+  color:var(--green);
+  font-size:22px;
+  font-weight:900;
+  letter-spacing:-.5px;
+  font-variant-numeric:tabular-nums;
+}
+
+.ped-ref{
+  text-align:right;
+  font-size:12px;
+  color:var(--dim);
+  font-weight:700;
+  font-variant-numeric:tabular-nums;
+  margin-bottom:8px;
+}
+
+.ped-ganancia{
+  padding-top:8px;
+  border-top:1px solid var(--line);
+  font-size:12px;
+  font-weight:800;
+  color:var(--green);
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+}
+
+/* ---------- Bloque de checks (detalle) ---------- */
+.ped-checks-title{
+  font-size:11px;
+  font-weight:900;
+  color:var(--dim);
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  margin:16px 0 10px;
+}
+
+.ped-check-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px;
+  background:var(--bg3);
+  border-radius:12px;
+  margin-bottom:8px;
+  cursor:pointer;
+  border:1.5px solid transparent;
+  transition:all .15s;
+}
+.ped-check-row:active{ background:var(--bg4); }
+.ped-check-row.done{
+  background:rgba(34,197,94,.10);
+  border-color:rgba(34,197,94,.3);
+}
+
+.ped-check-circle{
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  background:var(--bg4);
+  border:2px solid var(--line);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  color:var(--dim);
+  flex:0 0 auto;
+  transition:all .15s;
+}
+.ped-check-row.done .ped-check-circle{
+  background:var(--green);
+  border-color:var(--green);
+  color:#04140a;
+}
+
+.ped-check-info{ flex:1; min-width:0; }
+
+.ped-check-label{
+  font-size:14px;
+  font-weight:800;
+  color:var(--txt);
+  margin-bottom:2px;
+}
+
+.ped-check-sub{
+  font-size:11px;
+  color:var(--dim);
+  font-weight:600;
+}
+
+.ped-check-row.done .ped-check-sub{
+  color:var(--green);
+}
+
+/* ---------- Modal comprobante ---------- */
+.comprob-tipo-selector{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+  margin-top:10px;
+}
+
+.comprob-tipo-btn{
+  background:var(--bg3);
+  border:1.5px solid var(--line);
+  color:var(--dim);
+  border-radius:11px;
+  padding:14px 6px;
+  font-size:11px;
+  font-weight:800;
+  font-family:inherit;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+  transition:all .15s;
+}
+.comprob-tipo-btn:active{ background:var(--bg4); }
+.comprob-tipo-btn.active{
+  background:var(--green);
+  border-color:var(--green);
+  color:#04140a;
+}
+.comprob-tipo-btn .icon{
+  font-size:22px;
+}
+
+.comprob-preview{
+  background:var(--bg3);
+  border-radius:12px;
+  padding:12px;
+  margin-top:14px;
+  max-height:200px;
+  overflow:hidden;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+}
+.comprob-preview img{
+  max-width:100%;
+  max-height:180px;
+  border-radius:8px;
+  pointer-events:none;
+}
+
+/* ---------- Badge comprobante ---------- */
+.ped-comprobante-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:rgba(34,197,94,.14);
+  color:var(--green);
+  border-radius:8px;
+  padding:6px 10px;
+  font-size:11px;
+  font-weight:800;
+  margin-top:8px;
+}
+
+/* ---------- Banner listos ---------- */
+.ped-listos-banner{
+  background:linear-gradient(135deg, rgba(34,197,94,.15), rgba(22,163,74,.10));
+  border:1px solid rgba(34,197,94,.4);
+  border-radius:12px;
+  padding:14px;
+  margin:14px 0;
+  text-align:center;
+}
+.ped-listos-banner .icon{
+  font-size:32px;
+  margin-bottom:6px;
+}
+.ped-listos-banner .titulo{
+  font-size:14px;
+  font-weight:900;
+  color:var(--green);
+  margin-bottom:4px;
+}
+.ped-listos-banner .sub{
+  font-size:11px;
+  color:var(--dim);
+  font-weight:600;
+}
