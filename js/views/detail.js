@@ -1,6 +1,7 @@
 /* =========================================================
    views/detail.js — Detalle del producto
    Con termómetro bipolar + badge "Único" si no es restockeable.
+   v11: fotos desde IndexedDB vía getFotosProducto()
    ========================================================= */
 
 function openDetail(id){
@@ -15,7 +16,6 @@ function openDetail(id){
 
   body.innerHTML = buildDetailHTML(p, c, enRojo);
 
-  /* Reabastecer: solo si es restockeable */
   const btnRestock = $('#d-restock');
   if(btnRestock){
     btnRestock.onclick = () => {
@@ -37,10 +37,10 @@ function openDetail(id){
 }
 
 /* =========================================================
-   CARRUSEL DE FOTOS
+   CARRUSEL DE FOTOS (lee desde IndexedDB vía getFotosProducto)
    ========================================================= */
 function buildCarrusel(p){
-  const fotos = p.fotos || [];
+  const fotos = getFotosProducto(p);
   const principal = typeof p.fotoPrincipal === 'number' ? p.fotoPrincipal : 0;
 
   if(!fotos.length){
@@ -74,15 +74,12 @@ function buildCarrusel(p){
 
 /* =========================================================
    TERMÓMETRO BIPOLAR
-   Centro = recuperaste la inversión
-   Extremo derecho = vendiste TODO el stock
    ========================================================= */
 function buildTermometro(c){
   const inversion = c.inversion;
   const ingreso   = c.ingreso;
   const enRojo    = c.saldo < 0;
 
-  /* ---------- Posición del marcador ---------- */
   let posicion = 0;
 
   if(inversion > 0){
@@ -102,7 +99,6 @@ function buildTermometro(c){
 
   posicion = Math.round(posicion * 10) / 10;
 
-  /* ---------- Color y textos ---------- */
   const claseColor = enRojo ? 'rojo' : (c.saldo === 0 ? 'neutro' : 'verde');
 
   let titulo, subtitulo;
@@ -117,7 +113,6 @@ function buildTermometro(c){
     subtitulo = `Inversión: ${fmt(inversion)} · Recuperado: ${fmt(ingreso)}`;
   }
 
-  /* ---------- Info inferior ---------- */
   const faltantes = enRojo ? c.uEquilibrio : 0;
 
   let unidadesInfo;
@@ -183,17 +178,14 @@ function buildDetailHTML(p, c, enRojo){
        </div>`
     : '';
 
-  /* Badge "Único" si no es restockeable */
   const unicoBadge = !esRestockeable
     ? `<div class="badge-unico" style="margin-top:6px">🔒 Producto único</div>`
     : '';
 
-  /* Botón Reabastecer solo si es restockeable */
   const btnRestock = esRestockeable
     ? `<button class="btn-main" id="d-restock">📦 Reabastecer</button>`
     : '';
 
-  /* Historial de lotes */
   const lotesHTML = c.lotes.length > 1
     ? `
       <div class="detail-lotes">
@@ -270,7 +262,7 @@ function buildDetailHTML(p, c, enRojo){
   `;
 }
 
-/* ---------- Eliminar ---------- */
+/* ---------- Eliminar (borra fotos de IndexedDB) ---------- */
 async function eliminarProducto(id, nombre){
   const ok = await confirmarAccion({
     titulo: `¿Eliminar "${nombre}"?`,
@@ -281,6 +273,14 @@ async function eliminarProducto(id, nombre){
   });
 
   if(!ok) return;
+
+  /* Borrar fotos de IndexedDB */
+  try{
+    await eliminarFotosProducto(id);
+  }catch(e){
+    console.warn('No se pudieron borrar fotos:', e);
+  }
+  delete window.FOTOS[id];
 
   window.DB.products = window.DB.products.filter(x => x.id !== id);
 
