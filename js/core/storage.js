@@ -1,12 +1,17 @@
 /* =========================================================
-   core/storage.js — persistencia en localStorage
-   v10: agrega productoIds + productoIdsOcultos en suppliers
+   core/storage.js — persistencia
+   v11: fotos en IndexedDB + migración automática
    ========================================================= */
 
 const STORAGE_KEY = 'stocki_v1';
 const SESSION_KEY = 'stoki_sesion_compra';
 const CARRITO_KEY = 'stoki_carrito';
-const STORAGE_VERSION = 10;
+const STORAGE_VERSION = 11;
+
+const FOTOS_DB    = 'stoki-fotos';
+const FOTOS_STORE = 'fotos';
+
+let _fotosDB = null;
 
 window.DB = {
   version: STORAGE_VERSION,
@@ -26,10 +31,117 @@ window.DB = {
 
 window.SESSION = null;
 window.CARRITO = { items: [] };
+window.FOTOS   = {};
 
 /* =========================================================
-   CARGA + MIGRACIÓN
+   INDEXEDDB — FOTOS
    ========================================================= */
+function abrirFotosDB(){
+  return new Promise((resolve, reject) => {
+    if(_fotosDB) return resolve(_fotosDB);
+
+    const req = indexedDB.open(FOTOS_DB, 1);
+
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(FOTOS_STORE)){
+        db.createObjectStore(FOTOS_STORE);
+      }
+    };
+
+    req.onsuccess = e => {
+      _fotosDB = e.target.result;
+      resolve(_fotosDB);
+    };
+
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function guardarFotosProducto(productoId, fotos){
+  const db = await abrirFotosDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FOTOS_STORE, 'readwrite');
+    const store = tx.objectStore(FOTOS_STORE);
+
+    if(!fotos || !fotos.length){
+      store.delete(productoId);
+    } else {
+      store.put(fotos, productoId);
+    }
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function eliminarFotosProducto(productoId){
+  const db = await abrirFotosDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FOTOS_STORE, 'readwrite');
+    tx.objectStore(FOTOS_STORE).delete(productoId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function cargarTodasLasFotos(){
+  const db = await abrirFotosDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(FOTOS_STORE, 'readonly');
+    const store = tx.objectStore(FOTOS_STORE);
+    const req = store.openCursor();
+    const out = {};
+
+    req.onsuccess = e => {
+      const cursor = e.target.result;
+      if(cursor){
+        out[cursor.key] = cursor.value;
+        cursor.continue();
+      } else {
+        resolve(out);
+      }
+    };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function precargarFotos(){
+  try{
+    const guardadas = await cargarTodasLasFotos();
+    window.FOTOS = guardadas || {};
+  }catch(e){
+    console.warn('⚠️ IndexedDB no disponible:', e);
+    window.FOTOS = {};
+  }
+
+  const migrar = [];
+
+  (window.DB.products || []).forEach(p => {
+    if(Array.isArray(p.fotos) && p.fotos.length &&
+       typeof p.fotos[0] === 'string' &&
+       p.fotos[0].startsWith('data:')){
+      window.FOTOS[p.id] = p.fotos.slice();
+      migrar.push(p);
+    }
+  });
+
+  if(migrar.length){
+    for(const p of migrar){
+      try{
+        await guardarFotosProducto(p.id, window.FOTOS[p.id]);
+      }catch(e){
+        console.warn('Migración falló para', p.id, e);
+        continue;
+      }
+      p.cantidadFotos = window.FOTOS[p.id].length;
+      delete p.fotos;
+    }
+    saveDB();
+    console.log(`✅ Migradas ${migrar.length} fotos a IndexedDB`);
+  }
+}
+
 function loadDB(){
   try{
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -61,18 +173,28 @@ function loadDB(){
       if(window.DB.version < 8)  migrateToSuppliers();
       if(window.DB.version < 9)  migrateToOrders();
       if(window.DB.version < 10) migrateToSupplierProducts();
+      if(window.DB.version < 11) migrateToFotosIndexedDB();
 
       window.DB.version = STORAGE_VERSION;
       saveDB();
       console.log('✅ Migración completa a v' + STORAGE_VERSION);
     }
-
   }catch(e){
     console.error('❌ Error al cargar datos:', e);
   }
 }
 
-/* ---------- v1 → v2: 1 lote → multi-lote ---------- */
+function migrateToFotosIndexedDB(){
+  window.DB.products = (window.DB.products || []).map(p => {
+    if(Array.isArray(p.fotos) && p.fotos.length){
+      p.cantidadFotos = p.fotos.length;
+    } else if(typeof p.cantidadFotos !== 'number'){
+      p.cantidadFotos = 0;
+    }
+    return p;
+  });
+}
+
 function migrateToLotes(){
   window.DB.products = window.DB.products.map(p => {
     if(Array.isArray(p.lotes) && p.lotes.length > 0){
@@ -113,8 +235,6 @@ function migrateToLotes(){
     };
   });
 }
-
-/* ---------- v2 → v3: 1 foto → array de fotos ---------- */
 function migrateToMultiFotos(){
   window.DB.products = window.DB.products.map(p => {
     if(typeof p.foto === 'string' && p.foto){
@@ -122,22 +242,17 @@ function migrateToMultiFotos(){
       p.fotoPrincipal = 0;
       delete p.foto;
     }
-
     if(!Array.isArray(p.fotos)) p.fotos = [];
-
     if(typeof p.fotoPrincipal !== 'number' || p.fotoPrincipal >= p.fotos.length){
       p.fotoPrincipal = 0;
     }
-
     if(typeof p.codigoBarras === 'undefined'){
       p.codigoBarras = null;
     }
-
     return p;
   });
 }
 
-/* ---------- v3 → v4: snapshot de tasa ---------- */
 function migrateToTasa(){
   if(typeof window.DB.settings.refCurrency === 'undefined'){
     window.DB.settings.refCurrency = 'VES';
@@ -145,7 +260,6 @@ function migrateToTasa(){
   if(typeof window.DB.settings.tasaDia === 'undefined'){
     window.DB.settings.tasaDia = 0;
   }
-
   window.DB.products = window.DB.products.map(p => {
     (p.ventas || []).forEach(v => {
       if(typeof v.tasaSnapshot === 'undefined') v.tasaSnapshot = null;
@@ -155,159 +269,120 @@ function migrateToTasa(){
   });
 }
 
-/* ---------- v4 → v5: nomenclatura ---------- */
 function migrateToNomenclatura(){
   if(typeof window.DB.ventaCounter === 'undefined'){
     window.DB.ventaCounter = {};
   }
-
   const todasLasVentas = [];
   window.DB.products.forEach(p => {
     (p.ventas || []).forEach(v => {
       todasLasVentas.push({ venta: v, producto: p });
     });
   });
-
-  todasLasVentas.sort((a, b) =>
-    a.venta.fecha < b.venta.fecha ? -1 : 1
-  );
-
+  todasLasVentas.sort((a, b) => a.venta.fecha < b.venta.fecha ? -1 : 1);
   todasLasVentas.forEach(item => {
     const v = item.venta;
     if(v.numero) return;
-
     const dia = v.fecha.slice(0, 10);
     const diaCompacto = dia.replace(/-/g, '');
-
     window.DB.ventaCounter[dia] = (window.DB.ventaCounter[dia] || 0) + 1;
     const num = String(window.DB.ventaCounter[dia]).padStart(3, '0');
-
     v.numero = `${diaCompacto}-${num}`;
   });
 }
 
-/* ---------- v5 → v6: tickets ---------- */
 function migrateToTickets(){
-  if(!Array.isArray(window.DB.tickets)){
-    window.DB.tickets = [];
-  }
-
+  if(!Array.isArray(window.DB.tickets)) window.DB.tickets = [];
   window.DB.products = window.DB.products.map(p => {
     (p.ventas || []).forEach(v => {
-      if(typeof v.ticketId === 'undefined'){
-        v.ticketId = null;
-      }
+      if(typeof v.ticketId === 'undefined') v.ticketId = null;
     });
     return p;
   });
 }
 
-/* ---------- v6 → v7: clientes ---------- */
 function migrateToClients(){
-  if(!Array.isArray(window.DB.clients)){
-    window.DB.clients = [];
-  }
+  if(!Array.isArray(window.DB.clients)) window.DB.clients = [];
 }
 
-/* ---------- v7 → v8: proveedores + país ---------- */
 function migrateToSuppliers(){
-  if(!Array.isArray(window.DB.suppliers)){
-    window.DB.suppliers = [];
-  }
-
+  if(!Array.isArray(window.DB.suppliers)) window.DB.suppliers = [];
   window.DB.clients = (window.DB.clients || []).map(c => {
     if(typeof c.pais === 'undefined') c.pais = '';
     return c;
   });
-
   window.DB.products = (window.DB.products || []).map(p => {
     (p.lotes || []).forEach(l => {
-      if(typeof l.proveedorId === 'undefined'){
-        l.proveedorId = null;
-      }
+      if(typeof l.proveedorId === 'undefined') l.proveedorId = null;
     });
     return p;
   });
 }
 
-/* ---------- v8 → v9: pedidos ---------- */
 function migrateToOrders(){
-  if(!Array.isArray(window.DB.orders)){
-    window.DB.orders = [];
-  }
+  if(!Array.isArray(window.DB.orders)) window.DB.orders = [];
 }
 
-/* ---------- v9 → v10: productos por proveedor ---------- */
 function migrateToSupplierProducts(){
   window.DB.suppliers = (window.DB.suppliers || []).map(s => {
     if(!Array.isArray(s.productoIds))         s.productoIds = [];
     if(!Array.isArray(s.productoIdsOcultos))  s.productoIdsOcultos = [];
     return s;
   });
-
-  /* Rellenar productoIds con los productos que ya le compramos */
   (window.DB.products || []).forEach(p => {
     (p.lotes || []).forEach(l => {
       if(!l.proveedorId) return;
       const prov = window.DB.suppliers.find(x => x.id === l.proveedorId);
       if(!prov) return;
-      if(!prov.productoIds.includes(p.id)){
-        prov.productoIds.push(p.id);
-      }
+      if(!prov.productoIds.includes(p.id)) prov.productoIds.push(p.id);
     });
   });
 }
 
-/* =========================================================
-   NOMENCLATURA
-   ========================================================= */
 function generarNumeroTicket(fechaISO){
   const dia = (fechaISO || todayISO()).slice(0, 10);
   const diaCompacto = dia.replace(/-/g, '');
-
   window.DB.ventaCounter[dia] = (window.DB.ventaCounter[dia] || 0) + 1;
   const num = String(window.DB.ventaCounter[dia]).padStart(3, '0');
-
   return `${diaCompacto}-${num}`;
 }
 
-/* Genera el siguiente número de pedido del día: YYYYMMDD-PNNN */
 function generarNumeroPedido(fechaISO){
   const dia = (fechaISO || todayISO()).slice(0, 10);
   const diaCompacto = dia.replace(/-/g, '');
-
   const key = 'pedido_' + dia;
   window.DB.ventaCounter[key] = (window.DB.ventaCounter[key] || 0) + 1;
   const num = String(window.DB.ventaCounter[key]).padStart(3, '0');
-
   return `${diaCompacto}-P${num}`;
-}
-
-/* =========================================================
-   GUARDAR
-   ========================================================= */
+       }
 function saveDB(){
   try{
     window.DB.version = STORAGE_VERSION;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(window.DB));
+    const json = JSON.stringify(window.DB);
+
+    const bytes = new Blob([json]).size;
+    const mb = bytes / 1024 / 1024;
+
+    if(mb > 3.5 && !window._avisoStorage){
+      window._avisoStorage = true;
+      toast('⚠️ Almacenamiento casi lleno.');
+      setTimeout(() => { window._avisoStorage = false; }, 60000);
+    }
+
+    localStorage.setItem(STORAGE_KEY, json);
   }catch(e){
     console.error('❌ Error al guardar:', e);
-    toast('⚠️ Almacenamiento lleno');
+    toast('⚠️ Almacenamiento lleno.');
   }
 }
 
-/* =========================================================
-   SESIÓN DE COMPRA (Invertir)
-   ========================================================= */
 function loadSession(){
   try{
     const raw = localStorage.getItem(SESSION_KEY);
     if(!raw){ window.SESSION = null; return; }
     window.SESSION = JSON.parse(raw);
     if(!window.SESSION || !window.SESSION.activa) window.SESSION = null;
-  }catch(e){
-    window.SESSION = null;
-  }
+  }catch(e){ window.SESSION = null; }
 }
 
 function saveSession(){
@@ -317,9 +392,7 @@ function saveSession(){
       return;
     }
     localStorage.setItem(SESSION_KEY, JSON.stringify(window.SESSION));
-  }catch(e){
-    console.error('Error al guardar sesión:', e);
-  }
+  }catch(e){ console.error('Error al guardar sesión:', e); }
 }
 
 function clearSession(){
@@ -327,31 +400,19 @@ function clearSession(){
   localStorage.removeItem(SESSION_KEY);
 }
 
-/* =========================================================
-   CARRITO
-   ========================================================= */
 function loadCarrito(){
   try{
     const raw = localStorage.getItem(CARRITO_KEY);
-    if(!raw){
-      window.CARRITO = { items: [] };
-      return;
-    }
+    if(!raw){ window.CARRITO = { items: [] }; return; }
     const parsed = JSON.parse(raw);
-    window.CARRITO = {
-      items: Array.isArray(parsed.items) ? parsed.items : []
-    };
-  }catch(e){
-    window.CARRITO = { items: [] };
-  }
+    window.CARRITO = { items: Array.isArray(parsed.items) ? parsed.items : [] };
+  }catch(e){ window.CARRITO = { items: [] }; }
 }
 
 function saveCarrito(){
   try{
     localStorage.setItem(CARRITO_KEY, JSON.stringify(window.CARRITO));
-  }catch(e){
-    console.error('Error al guardar carrito:', e);
-  }
+  }catch(e){ console.error('Error al guardar carrito:', e); }
 }
 
 function clearCarrito(){
@@ -359,9 +420,6 @@ function clearCarrito(){
   localStorage.removeItem(CARRITO_KEY);
 }
 
-/* =========================================================
-   RESPALDO
-   ========================================================= */
 function exportBackup(){
   const data = JSON.stringify(window.DB, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
@@ -401,11 +459,15 @@ function importBackup(file){
       if(window.DB.version < 8)  migrateToSuppliers();
       if(window.DB.version < 9)  migrateToOrders();
       if(window.DB.version < 10) migrateToSupplierProducts();
+      if(window.DB.version < 11) migrateToFotosIndexedDB();
 
       window.DB.version = STORAGE_VERSION;
       saveDB();
-      renderAll();
-      toast('✅ Respaldo restaurado');
+
+      precargarFotos().then(() => {
+        renderAll();
+        toast('✅ Respaldo restaurado');
+      });
     }catch(err){
       console.error('Error al importar:', err);
       toast('⚠️ Archivo inválido');
