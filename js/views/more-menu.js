@@ -11,7 +11,7 @@ const MORE_ITEMS = [
   { action: 'categorias', icon: '🏷️', titulo: 'Categorías',    sub: 'Organizá tus productos' },
   { action: 'ayuda',      icon: '❓', titulo: 'Ayuda',         sub: 'Guía de la app' },
   { action: 'apariencia', icon: '🎨', titulo: 'Apariencia',    sub: 'Cambiá el tema y fondo' },
-  { tab: 8, icon: '📝', titulo: 'Listas',         sub: 'Listas de compras' },
+  { tab: 8, icon: '🛒', titulo: 'Compras',        sub: 'Calculadora de compras' },
   { tab: 7, icon: '🏭', titulo: 'Proveedores',   sub: 'Datos y WhatsApp directo' }
 ];
 

@@ -1,141 +1,52 @@
 /* =========================================================
-   shopping-lists.css
+   shopping-lists.css — Pestaña Compras
    ========================================================= */
 
-/* ---- Lista guardadas ---- */
-.sl-header {
+/* =========================================================
+   HEADER DE PÁGINA (título + botón listas)
+   ========================================================= */
+.sl-page-header {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 10px;
   margin-bottom: 14px;
 }
 
-.sl-title {
+.sl-page-title {
   font-size: 18px;
   font-weight: 900;
   color: var(--txt);
   letter-spacing: -.3px;
 }
 
-.sl-listas {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.sl-card {
+.sl-listas-btn {
+  background: var(--bg3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  width: 42px;
+  height: 42px;
+  font-size: 20px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px;
-  background: var(--bg2);
-  border-radius: 14px;
-  cursor: pointer;
-  box-shadow: var(--e1);
-  transition: transform .12s;
-}
-
-.sl-card:active { transform: scale(.98); }
-
-.sl-card-info { flex: 1; min-width: 0; }
-
-.sl-card-nombre {
-  font-size: 14px;
-  font-weight: 900;
+  justify-content: center;
+  font-family: inherit;
   color: var(--txt);
-  margin-bottom: 3px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  transition: background .15s;
 }
 
-.sl-card-meta {
-  font-size: 11px;
-  color: var(--dim);
-  font-weight: 700;
+.sl-listas-btn:active {
+  background: var(--bg4);
+  transform: scale(.95);
 }
 
-.sl-card-del {
-  background: rgba(239, 68, 68, .14);
-  color: var(--red);
-  border: 0;
-  border-radius: 8px;
-  width: 32px;
-  height: 32px;
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  padding: 0;
-  flex: 0 0 auto;
-}
-
-.sl-card-chevron {
-  font-size: 22px;
-  color: var(--dim);
-  font-weight: 300;
-  flex: 0 0 auto;
-}
-
-/* ---- Topbar de lista activa ---- */
-.sl-topbar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.sl-back {
-  background: var(--bg3);
-  border: 0;
-  color: var(--txt);
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  font-size: 18px;
-  font-family: inherit;
-  cursor: pointer;
-  flex: 0 0 auto;
-  padding: 0;
-}
-
-.sl-nombre-input {
-  flex: 1;
-  min-width: 0;
-  background: var(--bg3);
-  border: 1.5px solid transparent;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 15px;
-  font-weight: 800;
-  color: var(--txt);
-  font-family: inherit;
-  outline: none;
-  min-height: 40px;
-}
-
-.sl-nombre-input:focus { border-color: var(--green); }
-
-.sl-save-icon {
-  background: var(--green);
-  color: #04140a;
-  border: 0;
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  font-size: 18px;
-  font-family: inherit;
-  cursor: pointer;
-  flex: 0 0 auto;
-  padding: 0;
-}
-
-.sl-save-icon:active { filter: brightness(.9); }
-
-/* ---- Input de agregar ---- */
+/* =========================================================
+   INPUT DE AGREGAR
+   ========================================================= */
 .sl-input-row {
   display: flex;
   gap: 6px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .sl-input-row input {
@@ -147,7 +58,7 @@
   font-size: 13px;
   font-family: inherit;
   outline: none;
-  min-height: 44px;
+  min-height: 46px;
 }
 
 .sl-input-row input:focus { border-color: var(--green); }
@@ -160,9 +71,9 @@
   color: #04140a;
   border: 0;
   border-radius: 10px;
-  width: 44px;
-  height: 44px;
-  font-size: 22px;
+  width: 46px;
+  height: 46px;
+  font-size: 24px;
   font-weight: 900;
   font-family: inherit;
   cursor: pointer;
@@ -170,20 +81,25 @@
   flex: 0 0 auto;
 }
 
-.sl-input-row button:active { filter: brightness(.9); transform: scale(.95); }
+.sl-input-row button:active {
+  filter: brightness(.9);
+  transform: scale(.95);
+}
 
-/* ---- Items ---- */
+/* =========================================================
+   ITEMS
+   ========================================================= */
 .sl-items {
-  margin-bottom: 14px;
+  margin-bottom: 140px;  /* espacio para el footer sticky */
 }
 
 .sl-item {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 12px;
+  padding: 12px;
   background: var(--bg3);
-  border-radius: 10px;
+  border-radius: 12px;
   margin-bottom: 6px;
   transition: all .15s;
 }
@@ -198,8 +114,8 @@
 }
 
 .sl-item-check {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   border: 2px solid var(--line);
   background: transparent;
@@ -262,80 +178,317 @@
 
 .sl-vacio {
   text-align: center;
-  padding: 30px 20px;
-  background: var(--bg3);
-  border-radius: 12px;
+  padding: 50px 20px;
 }
 
-/* ---- Totales ---- */
-.sl-totales {
-  background: linear-gradient(135deg, rgba(34,197,94,.08), rgba(22,163,74,.04));
-  border: 1.5px solid rgba(34,197,94,.3);
-  border-radius: 14px;
-  padding: 14px;
-  margin-bottom: 12px;
+/* =========================================================
+   FOOTER STICKY (total + botón cuotas)
+   ========================================================= */
+.sl-footer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--nav-h) + var(--safe-bottom));
+  background: linear-gradient(180deg,
+    rgba(22, 26, 34, 0) 0%,
+    rgba(22, 26, 34, 0.95) 15%,
+    rgba(22, 26, 34, 0.98) 100%);
+  padding: 20px 14px 12px;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  z-index: 40;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-top: 1px solid rgba(42, 49, 64, 0.5);
 }
 
-.sl-total-line {
+.sl-footer-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sl-footer-total {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--dim);
-  margin-bottom: 4px;
-}
-
-.sl-total-line:last-child { margin-bottom: 0; }
-
-.sl-total-line b {
-  font-size: 20px;
-  color: var(--green);
-  font-weight: 900;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -.3px;
-}
-
-.sl-total-ref {
-  text-align: right;
-  font-size: 11px;
-  color: var(--dim);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  margin-bottom: 6px;
-}
-
-.sl-total-divider {
-  height: 1px;
-  background: rgba(34,197,94,.25);
-  margin: 8px 0;
-}
-
-.sl-total-comprado b {
-  color: var(--green);
-  font-size: 14px;
-}
-
-.sl-total-pendiente b {
-  color: var(--amber);
-  font-size: 14px;
-}
-
-/* ---- Acciones ---- */
-.sl-actions {
-  display: flex;
   gap: 8px;
 }
 
-/* ---- Modal de cuotas ---- */
-.cuo-resultado {
+.sl-footer-total span {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+
+.sl-footer-total b {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.5px;
+}
+
+.sl-footer-ref {
+  text-align: right;
+  font-size: 12px;
+  color: var(--dim);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+
+.sl-footer-sub {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 700;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(42, 49, 64, 0.5);
+}
+
+.sl-footer-sub b {
+  color: var(--txt);
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-cuotas-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #1a1000;
+  border: 0;
+  border-radius: 14px;
+  padding: 10px 16px;
+  min-width: 90px;
+  font-size: 11px;
+  font-weight: 900;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1.2;
+  flex: 0 0 auto;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, .3);
+}
+
+.sl-cuotas-btn:active {
+  filter: brightness(.9);
+  transform: scale(.96);
+}
+
+/* =========================================================
+   PANEL DE LISTAS (modal)
+   ========================================================= */
+.sl-panel-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.sl-panel-action {
+  background: var(--bg3);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--txt);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all .15s;
+}
+
+.sl-panel-action:active {
+  background: var(--bg4);
+  transform: scale(.97);
+}
+
+.sl-pa-icon {
+  font-size: 22px;
+  margin-bottom: 2px;
+}
+
+.sl-pa-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--txt);
+}
+
+.sl-pa-sub {
+  font-size: 10px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.sl-panel-title {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 8px;
+}
+
+.sl-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 45dvh;
+  overflow-y: auto;
+}
+
+.sl-panel-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg3);
+  border-radius: 12px;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all .15s;
+}
+
+.sl-panel-card:active {
+  background: var(--bg4);
+}
+
+.sl-panel-card.activa {
+  border-color: rgba(34, 197, 94, .4);
+  background: rgba(34, 197, 94, .06);
+}
+
+.sl-panel-info { flex: 1; min-width: 0; }
+
+.sl-panel-nombre {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--txt);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sl-panel-meta {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.sl-panel-del {
+  background: rgba(239, 68, 68, .14);
+  color: var(--red);
+  border: 0;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.sl-panel-empty {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+/* =========================================================
+   MODAL DE CUOTAS
+   ========================================================= */
+.cuo-cuotas-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0 8px;
+}
+
+.cuo-add-cuota {
+  background: rgba(34, 197, 94, .12);
+  border: 1px dashed var(--green);
+  border-radius: 8px;
+  padding: 6px 12px;
+  color: var(--green);
+  font-size: 11px;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.cuo-cuota-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+}
+
+.cuo-cuota-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--txt);
+  flex: 0 0 auto;
+  min-width: 60px;
+}
+
+.cuo-cuota-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg4);
+  border: 1.5px solid transparent;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--txt);
+  font-family: inherit;
+  outline: none;
+  min-height: 40px;
+  text-align: right;
+}
+
+.cuo-cuota-input:focus {
+  border-color: var(--green);
+}
+
+.cuo-cuota-pct {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--dim);
+  flex: 0 0 auto;
+}
+
+.cuo-cuota-del {
+  background: rgba(239, 68, 68, .14);
+  color: var(--red);
+  border: 0;
+  border-radius: 8px;
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.cuo-resumen {
   background: var(--bg3);
   border-radius: 12px;
   padding: 14px;
   margin-top: 16px;
 }
 
-.cuo-line {
+.cuo-resumen-line {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
@@ -345,13 +498,13 @@
   padding: 5px 0;
 }
 
-.cuo-line b {
+.cuo-resumen-line b {
   color: var(--txt);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
 
-.cuo-ref {
+.cuo-resumen-ref {
   text-align: right;
   font-size: 11px;
   color: var(--dim);
@@ -361,24 +514,18 @@
   margin-bottom: 4px;
 }
 
-.cuo-line-destacada {
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  margin: 6px 0;
-  padding: 10px 0;
-}
-
-.cuo-line-grande {
-  padding: 8px 0 4px;
-}
-
-.cuo-line-grande b {
-  font-size: 22px;
-  letter-spacing: -.5px;
-}
-
-.cuo-divider {
+.cuo-resumen-divider {
   height: 1px;
   background: var(--line);
   margin: 8px 0;
+}
+
+.cuo-resumen-suma {
+  padding: 8px 0 4px;
+  border-top: 1px solid var(--line);
+  margin-top: 6px;
+}
+
+.cuo-resumen-suma b {
+  font-size: 16px;
 }
