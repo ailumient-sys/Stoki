@@ -93,7 +93,7 @@ function renderInventarioAgrupado(lista){
       <div class="cat-section ${abierto ? 'open' : ''}" data-cat="${g.id}">
         <div class="cat-section-header">
           <span class="cat-chevron">▶</span>
-          <span>🏷️ ${esc(g.nombre)}</span>
+          <span>${emojiCategoria(g.id)} ${esc(g.nombre)}</span>
           <span class="cat-section-count">${g.items.length}</span>
         </div>
         <div class="cat-section-body">

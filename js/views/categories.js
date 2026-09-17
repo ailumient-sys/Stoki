@@ -1,3 +1,12 @@
+const CATEGORIA_EMOJIS = [
+  '🏷️', '📦', '🍔', '🍕', '🍺', '🍷', '☕', '🥤', '🍫', '🍬',
+  '👕', '👖', '👟', '👗', '👜', '🧥', '💄', '💅', '💍', '🕶️',
+  '📱', '💻', '🎧', '📷', '🔌', '🎮', '🖱️', '⌚', '🔋', '💡',
+  '🏠', '🛋️', '🪑', '🧴', '🧼', '🧹', '🔧', '🔨', '⚙️', '🔩',
+  '🚗', '🏍️', '🚲', '🛴', '⛽', '🔑', '🎨', '📚', '✏️', '🎁',
+  '🐶', '🐱', '🐟', '🐦', '🌱', '🌺', '⚽', '🏀', '🎾', '🏋️'
+];
+
 /* =========================================================
    views/categories.js — Gestión de categorías
    ========================================================= */
@@ -9,6 +18,12 @@ function obtenerCategorias(){
 function buscarCategoria(id){
   if(!id) return null;
   return obtenerCategorias().find(c => c.id === id) || null;
+}
+
+function emojiCategoria(categoriaId){
+  if(!categoriaId) return '📦';
+  const cat = buscarCategoria(categoriaId);
+  return cat && cat.emoji ? cat.emoji : '🏷️';
 }
 
 function nombreCategoria(producto){
@@ -29,7 +44,7 @@ function abrirGestionCategorias(){
         return `
           <div class="cat-row" data-id="${c.id}">
             <div class="cat-info">
-              <div class="cat-nombre">${esc(c.nombre)}</div>
+              <div class="cat-nombre">${c.emoji || '🏷️'} ${esc(c.nombre)}</div>
               <div class="cat-count">${count} producto${count !== 1 ? 's' : ''}</div>
             </div>
             <button class="cat-edit" data-edit="${c.id}" type="button">✏️</button>
@@ -80,12 +95,20 @@ function abrirGestionCategorias(){
 function abrirFormCategoria(id){
   const editando = !!id;
   const cat = editando ? buscarCategoria(id) : null;
+  window._emojiSeleccionado = editando && cat.emoji ? cat.emoji : '🏷️';
 
   if(document.querySelector('#m-categoria-form')) return;
 
+  const emojiActual = editando && cat.emoji ? cat.emoji : '🏷️';
+
+  const emojisHTML = CATEGORIA_EMOJIS.map(e =>
+    `<button type="button" class="emoji-btn ${e === emojiActual ? 'active' : ''}"
+             data-emoji="${e}">${e}</button>`
+  ).join('');
+
   const html = `
     <div class="overlay centered open" id="m-categoria-form" style="z-index:210">
-      <div class="sheet" style="position:relative;max-width:340px">
+      <div class="sheet" style="position:relative;max-width:380px">
         <button class="x" id="catform-close">✕</button>
         <h2>${editando ? '✏️ Editar' : '🏷️ Nueva'} categoría</h2>
 
@@ -93,6 +116,11 @@ function abrirFormCategoria(id){
         <input id="catform-nombre" placeholder="Ej: Bebidas"
                value="${editando ? esc(cat.nombre) : ''}"
                autocomplete="off">
+
+        <label>Icono</label>
+        <div class="emoji-picker" id="catform-emojis">
+          ${emojisHTML}
+        </div>
 
         <button class="btn-main" id="catform-save">Guardar</button>
       </div>
@@ -135,14 +163,20 @@ function guardarCategoria(id){
 
   if(!window.DB.categories) window.DB.categories = [];
 
+  const emoji = window._emojiSeleccionado || '🏷️';
+
   if(id){
     const cat = window.DB.categories.find(c => c.id === id);
-    if(cat) cat.nombre = nombre;
+    if(cat){
+      cat.nombre = nombre;
+      cat.emoji = emoji;
+    }
     toast('✅ Categoría actualizada');
   } else {
     window.DB.categories.push({
       id: 'cat_' + uid(),
       nombre,
+      emoji,
       creado: Date.now()
     });
     toast('✅ Categoría creada');
@@ -200,7 +234,7 @@ function abrirSelectorCategoria(onSelect){
   const listaHTML = cats.length
     ? cats.map(c => `
         <div class="cat-pick-row" data-id="${c.id}">
-          <span>🏷️</span>
+          <span>${c.emoji || '🏷️'}</span>
           <span>${esc(c.nombre)}</span>
         </div>`).join('')
     : '';

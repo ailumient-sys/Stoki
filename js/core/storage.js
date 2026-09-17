@@ -270,6 +270,7 @@ function loadDB(){
       if(window.DB.version < 10) migrateToSupplierProducts();
       if(window.DB.version < 11) migrateToFotosIndexedDB();
       if(window.DB.version < 13) migrateToCategories();
+      migrateCategoriasEmoji();
 
       window.DB.version = STORAGE_VERSION;
       saveDB();
@@ -557,6 +558,7 @@ function importBackup(file){
       if(window.DB.version < 10) migrateToSupplierProducts();
       if(window.DB.version < 11) migrateToFotosIndexedDB();
       if(window.DB.version < 13) migrateToCategories();
+      migrateCategoriasEmoji();
 
       window.DB.version = STORAGE_VERSION;
       saveDB();
