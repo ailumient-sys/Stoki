@@ -455,3 +455,13 @@ td.r, th.r{ text-align:right; }
   margin-right:5px;
   vertical-align:middle;
 }
+
+/* =========================================================
+   FIX v66: menú Más scrolleable (por si tiene muchas opciones)
+   ========================================================= */
+.fab-menu-overlay .fab-menu{
+  max-height:calc(100dvh - var(--nav-h) - 40px - var(--safe-bottom) - var(--safe-top));
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+}
