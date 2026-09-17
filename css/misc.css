@@ -24,8 +24,8 @@
 .bottom-nav::-webkit-scrollbar{ display:none; }
 
 .nav-btn{
-  flex:0 0 20%;
-  min-width:76px;
+  flex:1 1 0;
+  min-width:0;
   background:none;
   border:0;
   color:var(--dim);
