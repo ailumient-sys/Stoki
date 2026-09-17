@@ -553,6 +553,7 @@ async function init(){
   safeInit('splash',       () => initSplash());
   safeInit('orders',       () => initOrders());
   safeInit('onboarding',   () => initOnboarding());
+  safeInit('busquedaGlobal', () => initBusquedaGlobal());
 
   if('serviceWorker' in navigator && location.protocol.startsWith('http')){
     navigator.serviceWorker.register('sw.js').catch(() => {});

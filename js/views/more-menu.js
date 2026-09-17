@@ -9,6 +9,7 @@ const MORE_ITEMS = [
   { tab: 4, icon: '📈', titulo: 'Estadísticas',  sub: 'Gráficos y productos top' },
   { tab: 6, icon: '👥', titulo: 'Clientes',      sub: 'Historial por cliente' },
   { action: 'categorias', icon: '🏷️', titulo: 'Categorías',    sub: 'Organizá tus productos' },
+  { action: 'ayuda',      icon: '❓', titulo: 'Ayuda',         sub: 'Guía de la app' },
   { tab: 7, icon: '🏭', titulo: 'Proveedores',   sub: 'Datos y WhatsApp directo' }
 ];
 
@@ -46,7 +47,9 @@ function openMoreMenu(){
       const tab = btn.dataset.go;
       const action = btn.dataset.action;
       closeMoreMenu();
-      if(action === 'categorias'){
+      if(action === 'ayuda'){
+        setTimeout(() => abrirAyuda(), 120);
+      } else if(action === 'categorias'){
         setTimeout(() => abrirGestionCategorias(), 120);
       } else if(tab !== undefined && tab !== ''){
         setTimeout(() => setTab(+tab), 120);
