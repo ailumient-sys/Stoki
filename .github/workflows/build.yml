@@ -42,7 +42,8 @@ jobs:
         run: |
           MANIFEST="android/app/src/main/AndroidManifest.xml"
 
-          PERMISSIONS='    <uses-permission android:name="android.permission.CAMERA" />
+          PERMISSIONS='    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+              <uses-permission android:name="android.permission.CAMERA" />
               <uses-feature android:name="android.hardware.camera" android:required="false" />
               <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
               <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
@@ -97,6 +98,5 @@ jobs:
           name: Stoki build #${{ github.run_number }}
           body: |
             Build automático generado desde el commit ${{ github.sha }}
-            Fecha: ${{ github.event.head_commit.timestamp }}
           files: ${{ steps.sign_app.outputs.signedReleaseFile }}
           token: ${{ secrets.GITHUB_TOKEN }}
