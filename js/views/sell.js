@@ -7,7 +7,11 @@ let sellProductId = null;
 /* =========================================================
    ABRIR MODAL DE VENTA RÁPIDA
    ========================================================= */
+/* openSell DESACTIVADO — el flujo de venta ahora es por carrito */
 function openSell(id){
+  return toast('Usá el grid de productos');
+}
+function _openSellDesactivado(id){
   const p = window.DB.products.find(x => x.id === id);
   if(!p) return;
 

@@ -245,10 +245,12 @@ function updateCartFab(){
 
   if(!items.length){
     fab.classList.add('hidden');
+    fab.classList.remove('con-items');
     return;
   }
 
   fab.classList.remove('hidden');
+  fab.classList.add('con-items');
 
   let totalUSD = 0;
   let count = 0;
@@ -260,15 +262,16 @@ function updateCartFab(){
 
   const countEl = document.querySelector('#cart-fab-count');
   const montoEl = document.querySelector('#cart-fab-monto');
-  const refEl   = document.querySelector('#cart-fab-ref');
 
   if(countEl) countEl.textContent = count;
   if(montoEl) montoEl.textContent = fmt(totalUSD);
-  if(refEl){
-    const ref = fmtRefOnly(totalUSD);
-    refEl.textContent = ref || '';
-    refEl.style.display = ref ? 'block' : 'none';
-  }
+
+  if(navigator.vibrate) navigator.vibrate(8);
+}
+
+/* Abrir el modal del ticket (el carrito) */
+function abrirTicketCarrito(){
+  openCartModal();
 }
 /* =========================================================
    views/cart.js — PARTE 2/2

@@ -118,7 +118,7 @@ function initTapHandler(){
     if(e.target.closest('.sale-del'))    return;
     if(e.target.closest('.bill-del'))    return;
 
-    const vCard   = e.target.closest('.vender-card[data-vender]');
+    const vCard   = null; /* vender-card eliminado */
     const invItem = e.target.closest('.inv-item');
     const billRow = e.target.closest('.bill-row');
 
@@ -192,12 +192,7 @@ function handleShortTap(el, tipo){
 }
 
 function handleLongPress(el, tipo){
-  if(tipo === 'vender-card'){
-    const id = el.dataset.vender;
-    if(id && typeof agregarAlCarrito === 'function'){
-      agregarAlCarrito(id);
-    }
-  }
+  /* vender-card ya no existe: el toque corto agrega directo */
 }
 
 function initGestosBloqueados(){
