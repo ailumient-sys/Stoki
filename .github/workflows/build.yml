@@ -64,11 +64,25 @@ jobs:
 
       - name: Copiar iconos y splash
         run: |
-          cp -r android-res/mipmap-* android/app/src/main/res/ 2>/dev/null || true
-          cp android-res/icon-192.png www/icon-192.png
-          cp android-res/icon-512.png www/icon-512.png
+          echo "=== ANTES: contenido de res/ ==="
+          ls android/app/src/main/res/ | head -20
+          echo ""
+          echo "=== Copiando mipmaps ==="
+          cp -rv android-res/mipmap-* android/app/src/main/res/
+          echo ""
+          echo "=== Copiando icon-192 e icon-512 ==="
+          cp -v android-res/icon-192.png www/
+          cp -v android-res/icon-512.png www/
+          echo ""
+          echo "=== Eliminando anydpi-v26 ==="
           rm -rf android/app/src/main/res/mipmap-anydpi-v26
-          cp android-res/splash.png android/app/src/main/res/drawable/splash.png 2>/dev/null || true
+          echo ""
+          echo "=== DESPUÉS: contenido de mipmap-mdpi ==="
+          ls -la android/app/src/main/res/mipmap-mdpi/
+          echo ""
+          echo "=== Verificando que no exista anydpi-v26 ==="
+          ls android/app/src/main/res/ | grep anydpi || echo "✅ anydpi-v26 eliminado correctamente"
+          echo ""
           echo "✅ Iconos copiados"
 
       - name: Sincronizar
