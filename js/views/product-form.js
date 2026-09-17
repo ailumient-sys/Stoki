@@ -8,6 +8,7 @@ let fotoPrincipal = 0;
 let tipoMargen    = 'porcentaje';
 let margenScope   = 'unidad';
 let editandoProductoId = null;
+let fCategoriaId = null;
 
 const MAX_FOTOS = 6;
 const TAM_PRINCIPAL = 420;
@@ -17,6 +18,7 @@ const CAL_SECUNDARIA = 0.65;
 
 function openAddForm(){
   editandoProductoId = null;
+  fCategoriaId = null;
   resetAddForm();
 
   $('#f-title').textContent = 'Nuevo producto';
@@ -33,6 +35,7 @@ function openEditForm(id){
   if(!p) return;
 
   editandoProductoId = id;
+  fCategoriaId = p.categoriaId || null;
 
   nuevaFotos    = [...getFotosProducto(p)];
   fotoPrincipal = p.fotoPrincipal || 0;
@@ -79,6 +82,7 @@ function openEditForm(id){
 
   renderFotosGrid();
   updatePreview();
+  actualizarCategoriaDisplay();
   openModal('#m-add');
 }
 
@@ -116,6 +120,7 @@ function resetAddForm(){
 
   renderFotosGrid();
   updatePreview();
+  actualizarCategoriaDisplay();
 }
 
 function actualizarSegHint(){
@@ -361,6 +366,21 @@ function escanearCodigoForm(){
   });
 }
 
+
+/* ---------- Categoría ---------- */
+function actualizarCategoriaDisplay(){
+  const text = document.querySelector('#f-categoria-text');
+  if(!text) return;
+  if(!fCategoriaId){
+    text.textContent = 'Sin categoría';
+    text.classList.remove('asignada');
+    return;
+  }
+  const cat = buscarCategoria(fCategoriaId);
+  text.textContent = cat ? cat.nombre : 'Sin categoría';
+  text.classList.toggle('asignada', !!cat);
+}
+
 function initProductForm(){
   $('#f-seg').addEventListener('click', e => {
     const btn = e.target.closest('button');
@@ -411,6 +431,16 @@ function initProductForm(){
 
   $('#f-file').addEventListener('change', procesarFotos);
   $('#f-scan').addEventListener('click', escanearCodigoForm);
+
+  const btnCat = $('#f-categoria-display');
+  if(btnCat){
+    btnCat.addEventListener('click', () => {
+      abrirSelectorCategoria(id => {
+        fCategoriaId = id;
+        actualizarCategoriaDisplay();
+      });
+    });
+  }
   $('#f-save').addEventListener('click', guardarProducto);
 }
 
@@ -452,6 +482,7 @@ async function guardarProducto(){
     }
 
     p.nombre        = nombre || '(sin nombre)';
+    p.categoriaId   = fCategoriaId || null;
     p.fotoPrincipal = fotoPrincipal;
     p.cantidadFotos = nuevaFotos.length;
     p.tipoMargen    = tipoFinal;
@@ -508,6 +539,7 @@ async function guardarProducto(){
   const producto = {
     id: uid(),
     nombre: nombre || '(sin nombre)',
+    categoriaId: fCategoriaId || null,
     fotoPrincipal: fotoPrincipal,
     cantidadFotos: nuevaFotos.length,
     tipoMargen: tipoFinal,

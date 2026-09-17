@@ -6,7 +6,7 @@
 const STORAGE_KEY     = 'stocki_v1';
 const SESSION_KEY     = 'stoki_sesion_compra';
 const CARRITO_KEY     = 'stoki_carrito';
-const STORAGE_VERSION = 12;
+const STORAGE_VERSION = 13;
 
 const FOTOS_DB      = 'stoki-fotos';
 const FOTOS_STORE   = 'fotos';
@@ -21,6 +21,7 @@ window.DB = {
   clients: [],
   suppliers: [],
   orders: [],
+  categories: [],
   settings: {
     currency: 'USD',
     refCurrency: 'VES',
@@ -247,6 +248,7 @@ function loadDB(){
     window.DB.clients   = parsed.clients   || [];
     window.DB.suppliers = parsed.suppliers || [];
     window.DB.orders    = parsed.orders    || [];
+    window.DB.categories = parsed.categories || [];
     window.DB.settings = Object.assign(
       { currency: 'USD', refCurrency: 'VES', tasaDia: 0, tasaActualizada: null },
       parsed.settings || {}
@@ -267,6 +269,7 @@ function loadDB(){
       if(window.DB.version < 9)  migrateToOrders();
       if(window.DB.version < 10) migrateToSupplierProducts();
       if(window.DB.version < 11) migrateToFotosIndexedDB();
+      if(window.DB.version < 13) migrateToCategories();
 
       window.DB.version = STORAGE_VERSION;
       saveDB();
@@ -553,6 +556,7 @@ function importBackup(file){
       if(window.DB.version < 9)  migrateToOrders();
       if(window.DB.version < 10) migrateToSupplierProducts();
       if(window.DB.version < 11) migrateToFotosIndexedDB();
+      if(window.DB.version < 13) migrateToCategories();
 
       window.DB.version = STORAGE_VERSION;
       saveDB();

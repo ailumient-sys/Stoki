@@ -8,6 +8,7 @@
 
 let invModoOrden = 'recientes';
 let invBusqueda  = '';
+let invCatsExpandidas = {};  /* { catId: true/false } */
 
 function renderInventario(){
   const cont = $('#v-inv');
@@ -39,12 +40,88 @@ function renderInventario(){
     return;
   }
 
-  cont.innerHTML = toolbar + `
-    <div class="inv-grid">
-      ${lista.map(inventoryItemHTML).join('')}
-    </div>`;
+  /* Si hay búsqueda o filtro especial, mostrar grilla plana.
+     Si no, agrupar por categoría. */
+  const usarAgrupacion = !invBusqueda && invModoOrden === 'recientes';
+
+  if(usarAgrupacion){
+    cont.innerHTML = toolbar + renderInventarioAgrupado(lista);
+  } else {
+    cont.innerHTML = toolbar + `
+      <div class="inv-grid">
+        ${lista.map(inventoryItemHTML).join('')}
+      </div>`;
+  }
 
   bindInventarioEvents();
+}
+
+/* =========================================================
+   AGRUPACIÓN POR CATEGORÍA
+   ========================================================= */
+function renderInventarioAgrupado(lista){
+  const cats = [...obtenerCategorias()];
+  const sinCat = [];
+
+  const grupos = cats.map(cat => ({
+    id: cat.id,
+    nombre: cat.nombre,
+    items: []
+  }));
+
+  const mapa = {};
+  grupos.forEach(g => mapa[g.id] = g);
+
+  lista.forEach(p => {
+    if(p.categoriaId && mapa[p.categoriaId]){
+      mapa[p.categoriaId].items.push(p);
+    } else {
+      sinCat.push(p);
+    }
+  });
+
+  /* Ordenar grupos alfabéticamente */
+  grupos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+  let html = '';
+
+  grupos.forEach(g => {
+    if(!g.items.length) return;
+
+    const abierto = invCatsExpandidas[g.id] !== false;  /* default abierto */
+    html += `
+      <div class="cat-section ${abierto ? 'open' : ''}" data-cat="${g.id}">
+        <div class="cat-section-header">
+          <span class="cat-chevron">▶</span>
+          <span>🏷️ ${esc(g.nombre)}</span>
+          <span class="cat-section-count">${g.items.length}</span>
+        </div>
+        <div class="cat-section-body">
+          <div class="inv-grid">
+            ${g.items.map(inventoryItemHTML).join('')}
+          </div>
+        </div>
+      </div>`;
+  });
+
+  if(sinCat.length){
+    const abierto = invCatsExpandidas['_sin'] !== false;
+    html += `
+      <div class="cat-section ${abierto ? 'open' : ''}" data-cat="_sin">
+        <div class="cat-section-header" style="border-left-color:var(--dim)">
+          <span class="cat-chevron">▶</span>
+          <span>📦 Sin categoría</span>
+          <span class="cat-section-count">${sinCat.length}</span>
+        </div>
+        <div class="cat-section-body">
+          <div class="inv-grid">
+            ${sinCat.map(inventoryItemHTML).join('')}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  return html;
 }
 
 /* =========================================================
@@ -287,6 +364,17 @@ function bindInventarioEvents(){
     cor.addEventListener('touchstart', e => {
       e.stopPropagation();
     }, { passive: true });
+  });
+
+  /* Secciones desplegables de categorías */
+  document.querySelectorAll('.cat-section-header').forEach(header => {
+    header.addEventListener('click', () => {
+      const sec = header.closest('.cat-section');
+      if(!sec) return;
+      const id = sec.dataset.cat;
+      const abierto = sec.classList.toggle('open');
+      invCatsExpandidas[id] = abierto;
+    });
   });
 
   /* Botón Exportar PDF */

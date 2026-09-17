@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/views-orders.css">
   <link rel="stylesheet" href="css/views-clients.css">
   <link rel="stylesheet" href="css/exporter.css">
+  <link rel="stylesheet" href="css/views-categories.css">
 
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
@@ -131,6 +132,13 @@
       <input id="f-codigo" placeholder="Escaneá o escribí el código" autocomplete="off">
       <button class="btn-scan-inline" id="f-scan" type="button" aria-label="Escanear">📷</button>
     </div>
+
+    <label>Categoría <span style="color:var(--dim);text-transform:none;font-weight:600">(opcional)</span></label>
+    <button type="button" class="cat-display-btn" id="f-categoria-display">
+      <span>🏷️</span>
+      <span class="cat-display-text" id="f-categoria-text">Sin categoría</span>
+      <span>▾</span>
+    </button>
 
     <div class="solo-nuevo">
       <label>¿Cuántas unidades compraste?</label>
@@ -362,6 +370,13 @@
       <button class="btn-scan-inline" id="ip-scan" type="button" aria-label="Escanear">📷</button>
     </div>
 
+    <label>Categoría <span style="color:var(--dim);text-transform:none;font-weight:600">(opcional)</span></label>
+    <button type="button" class="cat-display-btn" id="ip-categoria-display">
+      <span>🏷️</span>
+      <span class="cat-display-text" id="ip-categoria-text">Sin categoría</span>
+      <span>▾</span>
+    </button>
+
     <label>¿Cuántas unidades compraste?</label>
     <input id="ip-unidades" type="number" inputmode="numeric" placeholder="10" min="1">
 
@@ -493,6 +508,7 @@
 <script src="js/views/orders-export.js"></script>
 <script src="js/views/clients.js"></script>
 <script src="js/views/suppliers.js"></script>
+<script src="js/views/categories.js"></script>
 <script src="js/views/more-menu.js"></script>
 
 <script src="js/app.js"></script>

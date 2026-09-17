@@ -7,6 +7,7 @@ let invFotoPrincipal = 0;
 let invTipoMargen    = 'porcentaje';
 let invMargenScope   = 'unidad';
 let invEditandoTempId = null;
+let invCategoriaId = null;
 
 const INV_MAX_FOTOS = 6;
 const INV_TAM_PRINCIPAL = 420;
@@ -363,6 +364,7 @@ function openInvestProduct(tempId){
 
     invNuevaFotos    = [...(p.fotos || [])];
     invFotoPrincipal = p.fotoPrincipal || 0;
+    invCategoriaId   = p.categoriaId || null;
 
     let tipoBtn = 'porcentaje';
     let scope = 'unidad';
@@ -405,6 +407,7 @@ function openInvestProduct(tempId){
     invFotoPrincipal = 0;
     invTipoMargen    = 'porcentaje';
     invMargenScope   = 'unidad';
+    invCategoriaId   = null;
 
     $('#ip-title').textContent = 'Agregar producto';
     $('#ip-nombre').value      = '';
@@ -435,6 +438,7 @@ function openInvestProduct(tempId){
 
   renderInvFotosGrid();
   updateInvPreview();
+  actualizarCategoriaDisplayInv();
   openModal('#m-invest-product');
 }
 
@@ -674,6 +678,7 @@ function guardarProductoTemporal(){
   const temp = {
     tempId: invEditandoTempId || ('tmp_' + uid()),
     nombre: nombre || '(sin nombre)',
+    categoriaId: invCategoriaId || null,
     fotos: [...invNuevaFotos],
     fotoPrincipal: invFotoPrincipal,
     unidades: u,
@@ -810,6 +815,7 @@ async function finishPurchase(){
     const producto = {
       id: nuevoId,
       nombre: tmp.nombre || '(sin nombre)',
+      categoriaId: tmp.categoriaId || null,
       fotoPrincipal: tmp.fotoPrincipal || 0,
       cantidadFotos: fotos.length,
       tipoMargen: tmp.tipoMargen,
@@ -866,6 +872,20 @@ function escanearCodigoInvest(){
     $('#ip-codigo').value = code;
     if(!existe) toast('✅ Código escaneado');
   });
+}
+
+
+function actualizarCategoriaDisplayInv(){
+  const text = document.querySelector('#ip-categoria-text');
+  if(!text) return;
+  if(!invCategoriaId){
+    text.textContent = 'Sin categoría';
+    text.classList.remove('asignada');
+    return;
+  }
+  const cat = buscarCategoria(invCategoriaId);
+  text.textContent = cat ? cat.nombre : 'Sin categoría';
+  text.classList.toggle('asignada', !!cat);
 }
 
 function initInvest(){
@@ -950,6 +970,16 @@ function initInvest(){
 
   const ipSave = $('#ip-save');
   if(ipSave) ipSave.addEventListener('click', guardarProductoTemporal);
+
+  const btnCat = $('#ip-categoria-display');
+  if(btnCat){
+    btnCat.addEventListener('click', () => {
+      abrirSelectorCategoria(id => {
+        invCategoriaId = id;
+        actualizarCategoriaDisplayInv();
+      });
+    });
+  }
 
   const finishSave = $('#finish-save');
   if(finishSave) finishSave.addEventListener('click', finishPurchase);

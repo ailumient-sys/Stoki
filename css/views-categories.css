@@ -1,0 +1,156 @@
+/* =========================================================
+   views-categories.css
+   ========================================================= */
+
+.cat-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg3);
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+
+.cat-info { flex: 1; min-width: 0; }
+
+.cat-nombre {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--txt);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cat-count {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.cat-edit,
+.cat-del {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: 0;
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+.cat-edit {
+  background: var(--bg4);
+  color: var(--txt);
+}
+
+.cat-del {
+  background: rgba(239, 68, 68, .14);
+  color: var(--red);
+}
+
+.cat-pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.cat-pick-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg3);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--txt);
+}
+
+.cat-pick-row:active { background: var(--bg4); }
+
+/* Selector en el form de producto */
+.cat-display-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg3);
+  border: 1.5px solid transparent;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--txt);
+  cursor: pointer;
+  min-height: var(--touch);
+  text-align: left;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.cat-display-btn:active { background: var(--bg4); }
+
+.cat-display-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--dim);
+}
+
+.cat-display-text.asignada { color: var(--green); }
+
+/* Secciones desplegables en Inventario */
+.cat-section {
+  margin-bottom: 14px;
+}
+
+.cat-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--txt);
+  border-left: 3px solid var(--green);
+}
+
+.cat-section-header .cat-chevron {
+  font-size: 14px;
+  transition: transform .2s;
+  color: var(--dim);
+}
+
+.cat-section.open .cat-chevron {
+  transform: rotate(90deg);
+}
+
+.cat-section-count {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 700;
+}
+
+.cat-section-body {
+  display: none;
+  margin-top: 10px;
+}
+
+.cat-section.open .cat-section-body {
+  display: block;
+}
