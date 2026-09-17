@@ -148,11 +148,16 @@
       <span>▾</span>
     </button>
 
+    <label class="check-row" id="f-costo-check-row" style="margin-bottom:14px">
+      <input type="checkbox" id="f-costo-desconocido">
+      <span>🤷 No sé cuánto me costó — solo precio de venta</span>
+    </label>
+
     <div class="solo-nuevo">
       <label>¿Cuántas unidades compraste?</label>
       <input id="f-unidades" type="number" inputmode="numeric" placeholder="20" min="1">
 
-      <div class="row2">
+      <div class="row2 solo-costo">
         <div>
           <label>Precio total pagado</label>
           <input id="f-total" type="number" inputmode="decimal" placeholder="0" min="0">
@@ -163,8 +168,8 @@
         </div>
       </div>
 
-      <label>Fecha de compra</label>
-      <input id="f-fecha" type="date">
+      <label class="solo-costo">Fecha de compra</label>
+      <input id="f-fecha" type="date" class="solo-costo">
     </div>
 
     <label>Precio de venta</label>
@@ -522,6 +527,7 @@
 <script src="js/views/apariencia.js"></script>
 <script src="js/views/calculadora.js"></script>
 <script src="js/views/shopping-lists.js"></script>
+<script src="js/views/backup-panel.js"></script>
 <script src="js/views/global-search.js"></script>
 <script src="js/views/more-menu.js"></script>
 

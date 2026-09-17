@@ -501,3 +501,45 @@ input[type=date]{ color-scheme:dark; }
   text-transform:uppercase;
   letter-spacing:.5px;
 }
+/* =========================================================
+   PANEL BACKUP (3 toques en logo)
+   ========================================================= */
+.bk-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 12px 8px;
+}
+
+.bk-stat {
+  text-align: center;
+}
+
+.bk-stat-num {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.bk-stat-lbl {
+  font-size: 9px;
+  font-weight: 800;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+
+.bk-hint {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+  text-align: center;
+  margin-top: 6px;
+  line-height: 1.4;
+  padding: 0 10px;
+}

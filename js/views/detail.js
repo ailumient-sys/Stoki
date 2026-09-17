@@ -182,6 +182,10 @@ function buildDetailHTML(p, c, enRojo){
     ? `<div class="badge-unico" style="margin-top:6px">🔒 Producto único</div>`
     : '';
 
+  const costoDescBadge = p.costoDesconocido
+    ? `<div class="badge-unico" style="margin-top:6px;background:rgba(245,158,11,.15);color:var(--amber)">⚠️ Costo no registrado · se completa en el primer restock</div>`
+    : '';
+
   const btnRestock = esRestockeable
     ? `<button class="btn-main" id="d-restock">📦 Reabastecer</button>`
     : '';
@@ -213,6 +217,7 @@ function buildDetailHTML(p, c, enRojo){
       </div>
       ${codigoBadge}
       ${unicoBadge}
+      ${costoDescBadge}
     </div>
 
     ${termo}

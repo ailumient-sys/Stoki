@@ -656,14 +656,59 @@ function clearCarrito(){
 /* =========================================================
    RESPALDO
    ========================================================= */
-function exportBackup(){
-  const data = JSON.stringify(window.DB, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = `stoki-respaldo-${todayISO()}.json`;
-  a.click();
-  toast('💾 Respaldo descargado');
+async function exportBackup(){
+  try{
+    const payload = {
+      ...window.DB,
+      _fotos: window.FOTOS || {},
+      _comprobantes: window.COMPROBANTES || {},
+      _exportadoEn: new Date().toISOString(),
+      _tipo: 'backup-completo',
+      _version: STORAGE_VERSION
+    };
+
+    const json = JSON.stringify(payload);
+    const blob = new Blob([json], { type: 'application/json' });
+    const nombreArchivo = `stoki-backup-${todayISO()}.json`;
+
+    /* Tamaño estimado */
+    const kb = (blob.size / 1024).toFixed(0);
+
+    if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
+      /* Leer como dataURL y usar exporter */
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try{
+          const dataURL = reader.result;
+          const r = await guardarArchivo(dataURL, nombreArchivo, 'Backup');
+
+          if(r.ok){
+            if(r.compartido){
+              toast(`📤 Backup (${kb} KB) listo para compartir`);
+            } else {
+              toast(`💾 Backup guardado (${kb} KB)`);
+            }
+          } else {
+            toast('⚠️ No se pudo exportar');
+          }
+        }catch(err){
+          console.error('Error al exportar:', err);
+          toast('⚠️ Error al exportar');
+        }
+      };
+      reader.readAsDataURL(blob);
+    } else {
+      /* Navegador */
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = nombreArchivo;
+      a.click();
+      toast(`💾 Backup descargado (${kb} KB)`);
+    }
+  }catch(e){
+    console.error('Error al exportar:', e);
+    toast('⚠️ Error al exportar');
+  }
 }
 
 async function importBackup(file){
@@ -674,14 +719,25 @@ async function importBackup(file){
       const parsed = JSON.parse(ev.target.result);
       if(!parsed.products) throw new Error('formato inválido');
 
-      window.DB.products   = parsed.products   || [];
-      window.DB.tickets    = parsed.tickets    || [];
-      window.DB.clients    = parsed.clients    || [];
-      window.DB.suppliers  = parsed.suppliers  || [];
-      window.DB.orders     = parsed.orders     || [];
-      window.DB.categories = parsed.categories || [];
+      /* Confirmar reemplazo */
+      const ok = await confirmarAccion({
+        titulo: '¿Restaurar backup?',
+        mensaje: 'Se reemplazarán TODOS los datos actuales (productos, ventas, pedidos, fotos).',
+        botonOk: 'Restaurar',
+        botonCancel: 'Cancelar',
+        colorOk: 'rojo'
+      });
+      if(!ok) return;
+
+      /* Restaurar DB principal */
+      window.DB.products        = parsed.products        || [];
+      window.DB.tickets         = parsed.tickets         || [];
+      window.DB.clients         = parsed.clients         || [];
+      window.DB.suppliers       = parsed.suppliers       || [];
+      window.DB.orders          = parsed.orders          || [];
+      window.DB.categories      = parsed.categories      || [];
       window.DB.historialCompras = parsed.historialCompras || [];
-      window.DB.shoppingLists = parsed.shoppingLists || [];
+      window.DB.shoppingLists   = parsed.shoppingLists   || [];
       window.DB.settings = Object.assign(
         { currency: 'USD', refCurrency: 'VES', tasaDia: 0, tasaActualizada: null },
         parsed.settings || {}
@@ -692,13 +748,40 @@ async function importBackup(file){
       if(window.DB.version < STORAGE_VERSION){
         await correrMigraciones();
       }
-
       window.DB.version = STORAGE_VERSION;
+
+      /* Guardar DB */
       await idbSet('db', window.DB);
 
+      /* Restaurar fotos */
+      const fotos = parsed._fotos || {};
+      const pids = Object.keys(fotos);
+
+      for(const pid of pids){
+        try{
+          await guardarFotosProducto(pid, fotos[pid]);
+        }catch(e){
+          console.warn('Foto no restaurada:', pid);
+        }
+      }
+
+      /* Restaurar comprobantes */
+      const comps = parsed._comprobantes || {};
+      const oids = Object.keys(comps);
+
+      for(const oid of oids){
+        try{
+          await guardarComprobanteDB(oid, comps[oid]);
+        }catch(e){
+          console.warn('Comprobante no restaurado:', oid);
+        }
+      }
+
+      /* Recargar caché y renderizar */
       await precargarFotos();
       renderAll();
-      toast('✅ Respaldo restaurado');
+
+      toast(`✅ Restaurado: ${window.DB.products.length} productos, ${pids.length} fotos`);
     }catch(err){
       console.error('Error al importar:', err);
       toast('⚠️ Archivo inválido');
@@ -708,28 +791,15 @@ async function importBackup(file){
   reader.readAsText(file);
 }
 
-/* =========================================================
-   INFO DE ALMACENAMIENTO (útil para debug)
-   ========================================================= */
-async function infoAlmacenamiento(){
-  let ls = 0;
-  try{
-    ls = new Blob([localStorage.getItem(STORAGE_KEY) || '']).size;
-  }catch(e){}
-
-  let idb = 0;
-  try{
-    idb = new Blob([JSON.stringify(window.DB)]).size;
-  }catch(e){}
-
-  return {
-    localStorageKB: (ls / 1024).toFixed(1),
-    idbKB: (idb / 1024).toFixed(1),
-    productos: (window.DB.products || []).length,
-    tickets: (window.DB.tickets || []).length,
-    orders: (window.DB.orders || []).length,
-    clientes: (window.DB.clients || []).length,
-    fotos: Object.keys(window.FOTOS || {}).length,
-    comprobantes: Object.keys(window.COMPROBANTES || {}).length
+/* Abrir file picker para importar */
+function abrirImportBackup(){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'application/json,.json';
+  input.onchange = e => {
+    const f = e.target.files[0];
+    if(f) importBackup(f);
   };
+  input.click();
 }
+

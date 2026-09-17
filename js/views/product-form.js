@@ -9,6 +9,7 @@ let tipoMargen    = 'porcentaje';
 let margenScope   = 'unidad';
 let editandoProductoId = null;
 let fCategoriaId = null;
+let fCostoDesconocido = false;
 
 const MAX_FOTOS = 6;
 const TAM_PRINCIPAL = 420;
@@ -19,6 +20,7 @@ const CAL_SECUNDARIA = 0.65;
 function openAddForm(){
   editandoProductoId = null;
   fCategoriaId = null;
+  fCostoDesconocido = false;
   resetAddForm();
 
   $('#f-title').textContent = 'Nuevo producto';
@@ -92,6 +94,7 @@ function resetAddForm(){
   tipoMargen = 'porcentaje';
   margenScope = 'unidad';
 
+  fCostoDesconocido = false;
   $('#f-nombre').value   = '';
   $('#f-codigo').value   = '';
   $('#f-unidades').value = '';
@@ -340,6 +343,8 @@ function updatePreview(){
     const p = window.DB.products.find(x => x.id === editandoProductoId);
     if(!p) return;
     costoU = calc(p).costoU;
+  } else if(fCostoDesconocido){
+    costoU = 0;
   } else {
     const u = +$('#f-unidades').value || 0;
     const t = +$('#f-total').value    || 0;
@@ -442,6 +447,39 @@ function actualizarCategoriaDisplay(){
   text.classList.toggle('asignada', !!cat);
 }
 
+
+function toggleCamposCosto(){
+  const chk = document.querySelector('#f-costo-desconocido');
+  const esNuevo = !editandoProductoId;
+
+  /* Solo aplica en modo "crear" */
+  if(!esNuevo) return;
+
+  const bloquesCosto = document.querySelectorAll('.solo-costo');
+
+  bloquesCosto.forEach(el => {
+    el.style.display = fCostoDesconocido ? 'none' : '';
+  });
+
+  /* Si es costo desconocido, forzar tipo precio */
+  if(fCostoDesconocido){
+    tipoMargen = 'precio';
+    const seg = document.querySelector('#f-seg');
+    if(seg){
+      seg.querySelectorAll('button').forEach(b =>
+        b.classList.toggle('active', b.dataset.tipo === 'precio')
+      );
+    }
+    const scopeEl = document.querySelector('#f-scope');
+    if(scopeEl) scopeEl.style.display = 'none';
+
+    actualizarSegHint();
+    actualizarPlaceholder();
+  }
+
+  updatePreview();
+}
+
 function initProductForm(){
   $('#f-seg').addEventListener('click', e => {
     const btn = e.target.closest('button');
@@ -492,6 +530,15 @@ function initProductForm(){
 
   $('#f-file').addEventListener('change', procesarFotos);
   $('#f-scan').addEventListener('click', escanearCodigoForm);
+
+  /* Checkbox "no sé el costo" */
+  const chkCosto = document.querySelector('#f-costo-desconocido');
+  if(chkCosto){
+    chkCosto.addEventListener('change', () => {
+      fCostoDesconocido = chkCosto.checked;
+      toggleCamposCosto();
+    });
+  }
 
   const btnCat = $('#f-categoria-display');
   if(btnCat){
@@ -579,7 +626,13 @@ async function guardarProducto(){
 
   if(!nombre && !codigo) return toast('⚠️ Poné nombre o escaneá un código');
   if(u <= 0) return toast('⚠️ Indica cuántas unidades');
-  if(t <= 0) return toast('⚠️ Indica el costo de compra');
+
+  if(fCostoDesconocido){
+    const precio = +$('#f-margen').value || 0;
+    if(precio <= 0) return toast('⚠️ Poné el precio de venta');
+  } else {
+    if(t <= 0) return toast('⚠️ Indica el costo de compra');
+  }
 
   if(codigo){
     const dup = window.DB.products.find(x => x.codigoBarras === codigo);
@@ -587,14 +640,26 @@ async function guardarProducto(){
   }
 
   const fechaCompra = $('#f-fecha').value || todayISO();
-  const costoU = t / u;
+
+  let costoTotalReal = t;
+  let costoUReal = u > 0 ? t / u : 0;
+  let tipoFinalReal = tipoFinal;
+  let valorMargenReal = valor;
+
+  if(fCostoDesconocido){
+    costoTotalReal = 0;
+    costoUReal = 0;
+    tipoFinalReal = 'precio';
+    valorMargenReal = +$('#f-margen').value || 0;
+  }
 
   const primerLote = {
     id: 'lote_' + uid(),
     fecha: fechaCompra,
     unidadesCompradas: u,
-    costoTotalCompra: t,
-    costoUnitario: costoU
+    costoTotalCompra: costoTotalReal,
+    costoUnitario: costoUReal,
+    costoDesconocido: fCostoDesconocido
   };
 
   const producto = {
@@ -603,8 +668,9 @@ async function guardarProducto(){
     categoriaId: fCategoriaId || null,
     fotoPrincipal: fotoPrincipal,
     cantidadFotos: nuevaFotos.length,
-    tipoMargen: tipoFinal,
-    valorMargen: valor,
+    tipoMargen: tipoFinalReal,
+    valorMargen: valorMargenReal,
+    costoDesconocido: fCostoDesconocido,
     codigoBarras: codigo || null,
     restockeable: restockeable,
     creado: Date.now(),
@@ -613,7 +679,7 @@ async function guardarProducto(){
     ventas: []
   };
 
-  if(tipoFinal === 'fijo-lote' || tipoFinal === 'precio-lote'){
+  if(tipoFinalReal === 'fijo-lote' || tipoFinalReal === 'precio-lote'){
     producto.unidadesMargen = unidadesMargen;
   }
 
