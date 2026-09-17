@@ -122,8 +122,8 @@ jobs:
       - name: Publicar como Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}-${{ github.run_attempt }}
-          name: Stoki build #${{ github.run_number }} (${{ github.run_attempt }})
+          tag_name: build-${{ github.run_number }}-${{ github.run_attempt }}-${{ github.run_attempt }}
+          name: Stoki build #${{ github.run_number }} (${{ github.run_attempt }}) (${{ github.run_attempt }})
           body: |
             Build automático generado desde el commit ${{ github.sha }}
           files: |

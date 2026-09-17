@@ -284,25 +284,30 @@ function initGlobalEvents(){
     let logoTaps = 0;
     let logoTimer = null;
 
-    logo.addEventListener('click', () => {
+    logo.style.cursor = 'pointer';
+
+    const manejarTap = (e) => {
+      e.stopPropagation();
       logoTaps++;
       clearTimeout(logoTimer);
 
-      /* Feedback visual sutil */
-      if(logoTaps === 2){
-        logo.style.transition = 'transform .15s';
-        logo.style.transform = 'scale(.95)';
-        setTimeout(() => logo.style.transform = '', 150);
-      }
-
       if(logoTaps >= 3){
         logoTaps = 0;
-        if(typeof abrirPanelBackup === 'function') abrirPanelBackup();
-      } else {
-        logoTimer = setTimeout(() => { logoTaps = 0; }, 900);
+        if(typeof abrirPanelBackup === 'function'){
+          abrirPanelBackup();
+        }
+        return;
       }
-    });
+
+      logoTimer = setTimeout(() => {
+        logoTaps = 0;
+      }, 1500);
+    };
+
+    logo.addEventListener('click', manejarTap);
+    logo.addEventListener('touchend', manejarTap);
   }
+
 
   window.addEventListener('beforeunload', saveDB);
 
