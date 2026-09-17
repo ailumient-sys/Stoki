@@ -543,3 +543,57 @@ input[type=date]{ color-scheme:dark; }
   line-height: 1.4;
   padding: 0 10px;
 }
+
+
+/* =========================================================
+   PAGO MÓVIL — QR
+   ========================================================= */
+.pm-qr-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  background:var(--bg3);
+  border-radius:12px;
+  padding:12px;
+  margin-top:4px;
+}
+.pm-qr-thumb{
+  width:52px; height:52px;
+  border-radius:10px;
+  background:var(--bg4);
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; flex:0 0 auto;
+  background-size:cover; background-position:center;
+  overflow:hidden;
+}
+.pm-qr-info{ flex:1; min-width:0; }
+.pm-qr-nombre{ font-size:13px; font-weight:800; color:var(--txt); margin-bottom:2px; }
+.pm-qr-sub{ font-size:11px; color:var(--dim); font-weight:600; }
+.pm-qr-btn{
+  background:var(--bg4); border:0; border-radius:8px;
+  padding:8px 12px; color:var(--txt);
+  font-family:inherit; font-size:11px; font-weight:800;
+  cursor:pointer; flex:0 0 auto;
+}
+.pm-qr-btn.danger{ background:rgba(239,68,68,.14); color:var(--red); }
+
+.pm-qr-display{
+  background:#ffffff;
+  border-radius:14px;
+  padding:16px;
+  text-align:center;
+  border:2px solid rgba(59,130,246,.3);
+}
+.pm-qr-display-label{
+  font-size:12px; font-weight:900; color:#1a1a1a;
+  margin-bottom:10px; text-transform:uppercase; letter-spacing:.5px;
+}
+.pm-qr-display img{
+  width:100%; max-width:240px; height:auto;
+  display:block; margin:0 auto; border-radius:8px;
+}
+.pm-qr-hint{
+  font-size:12px; font-weight:700; color:#666;
+  line-height:1.5; padding:14px 8px;
+}
+.pm-qr-hint b{ color:#2563eb; }

@@ -285,6 +285,22 @@
       <span>💵 Pago en efectivo</span>
     </label>
 
+    <label class="check-row" style="margin-top:8px">
+      <input type="checkbox" id="confirm-pago-movil">
+      <span>📱 Pago Móvil</span>
+    </label>
+
+    <div id="confirm-qr-wrap" style="display:none;margin-top:12px">
+      <div class="pm-qr-display">
+        <div class="pm-qr-display-label">📱 Escaneá para pagar</div>
+        <img id="confirm-qr-img" alt="QR Pago Móvil">
+        <div class="pm-qr-hint" id="confirm-qr-hint" style="display:none">
+          No configuraste tu QR todavía.<br>
+          Andá a <b>🏪 Mi negocio</b> y cargalo.
+        </div>
+      </div>
+    </div>
+
     <button class="btn-main" id="confirm-sale-ok">
       ✅ Sí, cobrar y guardar
     </button>

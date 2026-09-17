@@ -162,7 +162,39 @@ function openConfirmSale(){
   const efectivoCheck = document.querySelector('#confirm-efectivo');
   if(efectivoCheck) efectivoCheck.checked = ps.efectivo || false;
 
+  /* Restaurar el check de pago móvil */
+  const pmCheck = document.querySelector('#confirm-pago-movil');
+  if(pmCheck) pmCheck.checked = ps.pagoMovil || false;
+
+  actualizarQRPagoMovil();
+
   openModal('#m-confirm-sale');
+}
+
+function actualizarQRPagoMovil(){
+  const wrap  = document.querySelector('#confirm-qr-wrap');
+  const img   = document.querySelector('#confirm-qr-img');
+  const hint  = document.querySelector('#confirm-qr-hint');
+  const check = document.querySelector('#confirm-pago-movil');
+  if(!wrap || !img || !check) return;
+
+  if(!check.checked){
+    wrap.style.display = 'none';
+    return;
+  }
+
+  wrap.style.display = 'block';
+  const qr = (window.DB.settings.business || {}).qrPagoMovil;
+
+  if(qr){
+    img.src = qr;
+    img.style.display = 'block';
+    if(hint) hint.style.display = 'none';
+  } else {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    if(hint) hint.style.display = 'block';
+  }
 }
 
 /* =========================================================
@@ -195,6 +227,10 @@ function confirmarVenta(){
   const efectivoCheck = document.querySelector('#confirm-efectivo');
   const efectivo = efectivoCheck ? efectivoCheck.checked : false;
 
+  /* Check pago móvil */
+  const pmCheck = document.querySelector('#confirm-pago-movil');
+  const pagoMovil = pmCheck ? pmCheck.checked : false;
+
   /* Crear el ticket */
   const ticket = {
     id: ticketId,
@@ -212,6 +248,7 @@ function confirmarVenta(){
     total: ps.total,
     ganancia: ps.ganancia,
     efectivo: efectivo,
+    pagoMovil: pagoMovil,
     tasaSnapshot: tasaSnap > 0 ? tasaSnap : null,
     refCurrencySnapshot: tasaSnap > 0 ? refSnap : null
   };
@@ -552,6 +589,15 @@ function initSell(){
   if(efectivoCheck){
     efectivoCheck.addEventListener('change', () => {
       if(window.pendingSale) window.pendingSale.efectivo = efectivoCheck.checked;
+    });
+  }
+
+  /* Check pago móvil: persistir + mostrar QR */
+  const pmCheck = $('#confirm-pago-movil');
+  if(pmCheck){
+    pmCheck.addEventListener('change', () => {
+      if(window.pendingSale) window.pendingSale.pagoMovil = pmCheck.checked;
+      actualizarQRPagoMovil();
     });
   }
 }

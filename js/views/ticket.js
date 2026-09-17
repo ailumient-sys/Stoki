@@ -72,6 +72,13 @@ function buildTicketHTML(t){
        </div>`
     : '';
 
+  const pagoMovilHTML = t.pagoMovil
+    ? `<div class="ticket-cliente"
+            style="background:rgba(59,130,246,.14);color:#60a5fa">
+         📱 Pago Móvil
+       </div>`
+    : '';
+
   return `
     <div class="ticket-header">
       <div class="ticket-icon">🧾</div>
@@ -81,6 +88,7 @@ function buildTicketHTML(t){
 
     ${clienteHTML}
     ${efectivoHTML}
+    ${pagoMovilHTML}
 
     <div class="ticket-items">${itemsHTML}</div>
 
@@ -224,6 +232,15 @@ async function buildTicketCanvas(t){
        </div>`
     : '';
 
+  const pagoMovilHTML = t.pagoMovil
+    ? `<div style="background:#dbeafe;border-radius:8px;
+                   padding:8px 14px;margin-bottom:14px;
+                   font-size:12px;font-weight:800;color:#2563eb;
+                   text-align:center">
+         📱 Pago Móvil
+       </div>`
+    : '';
+
   const refTotal = fmtRefOnly(t.total, t.tasaSnapshot);
 
   const renderHTML = `
@@ -249,6 +266,7 @@ async function buildTicketCanvas(t){
 
       ${clienteHTML}
       ${efectivoHTML}
+      ${pagoMovilHTML}
 
       <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
         <thead>
