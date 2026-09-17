@@ -151,20 +151,13 @@ function buildInventarioToolbar(){
           📊 Inventario
         </div>
         <div style="display:flex;gap:6px">
-          <button type="button" id="inv-pdf"
-                  style="background:var(--bg3);border:1px solid var(--line);
-                         border-radius:8px;padding:7px 10px;color:var(--txt);
-                         font-size:11px;font-weight:800;font-family:inherit;
-                         cursor:pointer">
-            📄 PDF
-          </button>
-          <button type="button" id="inv-catalogo"
+          <button type="button" id="inv-export"
                   style="background:rgba(34,197,94,.12);
                          border:1px solid rgba(34,197,94,.35);
-                         border-radius:8px;padding:7px 10px;color:var(--green);
+                         border-radius:8px;padding:7px 12px;color:var(--green);
                          font-size:11px;font-weight:800;font-family:inherit;
                          cursor:pointer">
-            🖼️ Catálogo
+            📄 Exportar
           </button>
         </div>
       </div>
@@ -377,28 +370,15 @@ function bindInventarioEvents(){
     });
   });
 
-  /* Botón Exportar PDF */
-  const btnPdf = $('#inv-pdf');
-  if(btnPdf){
-    btnPdf.addEventListener('click', e => {
+  /* Botón Exportar unificado */
+  const btnExport = $('#inv-export');
+  if(btnExport){
+    btnExport.addEventListener('click', e => {
       e.stopPropagation();
-      if(typeof exportarInventarioPDF === 'function'){
-        exportarInventarioPDF();
+      if(typeof abrirModalExportPDF === 'function'){
+        abrirModalExportPDF();
       } else {
-        toast('⚠️ Exportador PDF no disponible');
-      }
-    });
-  }
-
-  /* Botón Exportar Catálogo */
-  const btnCat = $('#inv-catalogo');
-  if(btnCat){
-    btnCat.addEventListener('click', e => {
-      e.stopPropagation();
-      if(typeof exportarCatalogoPDF === 'function'){
-        exportarCatalogoPDF();
-      } else {
-        toast('⚠️ Exportador de catálogo no disponible');
+        toast('⚠️ Exportador no disponible');
       }
     });
   }

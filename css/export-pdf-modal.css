@@ -1,0 +1,196 @@
+/* =========================================================
+   export-pdf-modal.css
+   ========================================================= */
+
+.exp-modal .sheet {
+  max-width: 480px;
+}
+
+.exp-section {
+  margin-bottom: 16px;
+}
+
+.exp-section-title {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 8px;
+}
+
+/* Selector de tipo */
+.exp-tipo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.exp-tipo-btn {
+  background: var(--bg3);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 6px;
+  font-family: inherit;
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: all .15s;
+}
+
+.exp-tipo-btn .icon { font-size: 22px; }
+
+.exp-tipo-btn.active {
+  background: rgba(34, 197, 94, .14);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+/* Grid de números */
+.exp-num-grid {
+  display: flex;
+  gap: 6px;
+}
+
+.exp-num-btn {
+  flex: 1;
+  background: var(--bg3);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 6px;
+  font-family: inherit;
+  color: var(--txt);
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all .15s;
+}
+
+.exp-num-btn.active {
+  background: var(--green);
+  color: #04140a;
+  border-color: var(--green);
+}
+
+/* Toggle */
+.exp-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+.exp-toggle-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--txt);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exp-toggle-sub {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.exp-toggle-switch {
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: var(--bg4);
+  position: relative;
+  transition: background .2s;
+  flex: 0 0 auto;
+}
+
+.exp-toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform .2s;
+}
+
+.exp-toggle.on .exp-toggle-switch {
+  background: var(--green);
+}
+
+.exp-toggle.on .exp-toggle-switch::after {
+  transform: translateX(18px);
+}
+
+/* Imagen de fondo */
+.exp-bg-preview {
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.exp-bg-thumb {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  background: var(--bg4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex: 0 0 auto;
+  background-size: cover;
+  background-position: center;
+}
+
+.exp-bg-info { flex: 1; min-width: 0; }
+
+.exp-bg-nombre {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--txt);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.exp-bg-sub {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.exp-bg-btn {
+  background: var(--bg4);
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--txt);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.exp-bg-btn.danger {
+  background: rgba(239, 68, 68, .14);
+  color: var(--red);
+}

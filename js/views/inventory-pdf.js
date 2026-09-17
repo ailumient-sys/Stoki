@@ -528,6 +528,13 @@ function dibujarHeaderCompactoPDF(doc, { W, M, nombreNegocio, fecha }){
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text(`${nombreNegocio} · ${fecha}`, W - M, 9.5, { align: 'right' });
+
+  if(categoriaNombre){
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...PDF_VERDE);
+    doc.text(categoriaNombre, M, 20);
+  }
 }
 
 function dibujarCabeceraTablaPDF(doc, y, colX, M, W){
@@ -605,7 +612,7 @@ function dibujarFooterPDF(doc, { W, H, M, valorTotalStock, unidadesTotales }){
   doc.text('Generado con Stoki', W - M, y + 7, { align: 'right' });
 }
 
-function dibujarHeaderCatalogoPDF(doc, { W, M, nombreNegocio, fecha, total }){
+function dibujarHeaderCatalogoPDF(doc, { W, M, nombreNegocio, fecha, total, categoriaNombre }){
   doc.setFillColor(...PDF_VERDE);
   doc.rect(0, 0, W, 22, 'F');
 
@@ -626,9 +633,16 @@ function dibujarHeaderCatalogoPDF(doc, { W, M, nombreNegocio, fecha, total }){
   doc.setTextColor(...PDF_GRIS);
   doc.setFontSize(9);
   doc.text(`${total} productos · ${fecha}`, W - M, 32, { align: 'right' });
+
+  if(categoriaNombre){
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.setTextColor(...PDF_VERDE);
+    doc.text(categoriaNombre, M, 40);
+  }
 }
 
-function dibujarHeaderCompactoCatalogoPDF(doc, { W, M, nombreNegocio, fecha }){
+function dibujarHeaderCompactoCatalogoPDF(doc, { W, M, nombreNegocio, fecha, categoriaNombre }){
   doc.setFillColor(...PDF_VERDE);
   doc.rect(0, 0, W, 14, 'F');
 
@@ -639,4 +653,277 @@ function dibujarHeaderCompactoCatalogoPDF(doc, { W, M, nombreNegocio, fecha }){
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text(`${nombreNegocio} · ${fecha}`, W - M, 9.5, { align: 'right' });
+
+  if(categoriaNombre){
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...PDF_VERDE);
+    doc.text(categoriaNombre, M, 20);
+  }
+}
+
+
+/* =========================================================
+   EXPORTACIÓN UNIFICADA CON OPCIONES
+   ========================================================= */
+async function exportarConOpciones(tipo){
+  if(typeof window.jspdf === 'undefined'){
+    toast('⚠️ Generador PDF no cargado');
+    return;
+  }
+
+  const opciones = window.expOpciones || {};
+
+  if(tipo === 'inventario'){
+    await generarInventarioPDF(opciones);
+  } else if(tipo === 'catalogo'){
+    await generarCatalogoPDF(opciones);
+  } else if(tipo === 'ambos'){
+    /* Generar catálogo primero */
+    await generarCatalogoPDF(opciones, true);
+    /* Luego inventario */
+    setTimeout(() => generarInventarioPDF(opciones), 500);
+  }
+}
+
+async function generarInventarioPDF(op){
+  const productos = window.DB.products || [];
+  if(!productos.length){
+    toast('⚠️ No hay productos para exportar');
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const M = 15;
+
+  let valorTotalStock = 0;
+  let unidadesTotales = 0;
+
+  productos.forEach(p => {
+    const c = calc(p);
+    valorTotalStock += c.stock * c.costoU;
+    unidadesTotales += c.stock;
+  });
+
+  const negocio = window.DB.settings.business || {};
+  const nombreNegocio = negocio.nombre || 'Mi negocio';
+  const fecha = new Date().toLocaleDateString('es-VE', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  });
+
+  const lista = [...productos].sort((a, b) =>
+    a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
+  );
+
+  const colX = {
+    num:     M,
+    nombre:  M + 8,
+    costo:   M + 130,
+    precio:  M + 165,
+    stock:   M + 205,
+    valor:   M + 235
+  };
+
+  const tablaCabH = 8;
+  const rowH      = 8;
+  const footerH   = 18;
+
+  let y = M;
+
+  await dibujarHeaderPDF(doc, {
+    W, M, nombreNegocio, fecha, valorTotalStock, unidadesTotales,
+    cantidad: productos.length
+  });
+
+  if(op && op.imagenFondo){
+    dibujarImagenFondoPDF(doc, op.imagenFondo, W, H);
+  }
+
+  y = M + 42;
+
+  dibujarCabeceraTablaPDF(doc, y, colX, M, W);
+  y += tablaCabH;
+
+  lista.forEach((p, idx) => {
+    if(y + rowH > H - M - footerH){
+      dibujarFooterPDF(doc, { W, H, M, valorTotalStock, unidadesTotales });
+
+      doc.addPage();
+      y = M + 22;
+
+      dibujarMarcaDeAguaLogoPDF(doc, W, H);
+      if(op && op.imagenFondo) dibujarImagenFondoPDF(doc, op.imagenFondo, W, H);
+      dibujarHeaderCompactoPDF(doc, { W, M, nombreNegocio, fecha });
+      dibujarCabeceraTablaPDF(doc, y, colX, M, W);
+      y += tablaCabH;
+    }
+
+    const c = calc(p);
+    dibujarFilaPDF(doc, y, idx, p, c, colX, M, W);
+    y += rowH;
+  });
+
+  dibujarFooterPDF(doc, { W, H, M, valorTotalStock, unidadesTotales });
+
+  const nombreArchivo = `Inventario-${todayISO()}.pdf`;
+  previsualizarPDF(doc, nombreArchivo, 'Inventario');
+}
+
+async function generarCatalogoPDF(op, noPreview){
+  const productos = (window.DB.products || []).filter(p => calc(p).stock > 0);
+  if(!productos.length){
+    toast('⚠️ No hay productos con stock');
+    return;
+  }
+
+  if(!noPreview && document.querySelector('#m-catalog-loading')) return;
+
+  if(!noPreview){
+    document.body.insertAdjacentHTML('beforeend', `
+      <div class="overlay centered open" id="m-catalog-loading">
+        <div class="sheet" style="text-align:center;max-width:340px">
+          <h2 style="margin-bottom:10px">Generando catálogo...</h2>
+          <div class="sub" style="margin-bottom:14px">
+            ${productos.length} producto${productos.length !== 1 ? 's' : ''}
+          </div>
+          <div style="font-size:44px">🖼️</div>
+        </div>
+      </div>`);
+  }
+
+  try{
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const W = doc.internal.pageSize.getWidth();
+    const H = doc.internal.pageSize.getHeight();
+    const M = 15;
+
+    const negocio = window.DB.settings.business || {};
+    const nombreNegocio = negocio.nombre || 'Mi negocio';
+    const fecha = new Date().toLocaleDateString('es-VE', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+
+    const cols = op.columnas || 2;
+    const porPagina = op.filas || 3;
+    const gapX = 8;
+    const gapY = 6;
+    const cardW = (W - 2 * M - gapX * (cols - 1)) / cols;
+
+    const altoDisponible = H - (M + 40) - M - 15;
+    const cardH = altoDisponible / porPagina - gapY;
+    const imgH = cardH - 22;
+
+    /* Agrupar por categoría si corresponde */
+    let grupos;
+    if(op.separarCategorias){
+      const cats = obtenerCategorias();
+      grupos = cats.map(cat => ({
+        nombre: `${cat.emoji || '🏷️'} ${cat.nombre}`,
+        items: productos.filter(p => p.categoriaId === cat.id)
+      })).filter(g => g.items.length);
+
+      const sinCat = productos.filter(p => !p.categoriaId || !buscarCategoria(p.categoriaId));
+      if(sinCat.length){
+        grupos.push({ nombre: '📦 Sin categoría', items: sinCat });
+      }
+    } else {
+      grupos = [{
+        nombre: null,
+        items: [...productos].sort((a, b) =>
+          a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
+        )
+      }];
+    }
+
+    /* Pre-renderizar imágenes */
+    const imagenesMap = {};
+    for(const p of productos){
+      const foto = getFotoPrincipal(p);
+      imagenesMap[p.id] = foto ? await prepararImagenCatalogo(foto, 500, 300) : null;
+    }
+
+    let esPrimeraHoja = true;
+
+    for(const grupo of grupos){
+      const totalGrupo = Math.ceil(grupo.items.length / (cols * porPagina));
+
+      for(let paginaGrupo = 0; paginaGrupo < totalGrupo; paginaGrupo++){
+        if(!esPrimeraHoja) doc.addPage();
+        esPrimeraHoja = false;
+
+        doc.setFillColor(...PDF_BLANCO);
+        doc.rect(0, 0, W, H, 'F');
+
+        if(op.imagenFondo){
+          dibujarImagenFondoPDF(doc, op.imagenFondo, W, H);
+        }
+        await dibujarMarcaDeAguaLogoPDF(doc, W, H);
+
+        if(paginaGrupo === 0){
+          dibujarHeaderCatalogoPDF(doc, { W, M, nombreNegocio, fecha, total: grupo.items.length, categoriaNombre: grupo.nombre });
+        } else {
+          dibujarHeaderCompactoCatalogoPDF(doc, { W, M, nombreNegocio, fecha, categoriaNombre: grupo.nombre });
+        }
+
+        const startY = M + 40;
+        const inicio = paginaGrupo * cols * porPagina;
+        const fin = Math.min(inicio + cols * porPagina, grupo.items.length);
+
+        for(let i = inicio; i < fin; i++){
+          const pos = i - inicio;
+          const col = pos % cols;
+          const row = Math.floor(pos / cols);
+
+          const x = M + col * (cardW + gapX);
+          const y = startY + row * (cardH + gapY);
+
+          dibujarCardCatalogoPDF(doc, x, y, cardW, cardH, imgH, grupo.items[i], imagenesMap[grupo.items[i].id]);
+        }
+      }
+    }
+
+    const loadEl = document.querySelector('#m-catalog-loading');
+    if(loadEl) loadEl.remove();
+
+    const nombreArchivo = `Catalogo-${todayISO()}.pdf`;
+
+    if(noPreview){
+      const base64 = doc.output('datauristring');
+      if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
+        await guardarArchivo(base64, nombreArchivo, 'Catalogo');
+      } else {
+        doc.save(nombreArchivo);
+      }
+      toast('📄 Catálogo generado');
+    } else {
+      previsualizarPDF(doc, nombreArchivo, 'Catalogo');
+    }
+
+    if(navigator.vibrate) navigator.vibrate(20);
+
+  }catch(e){
+    console.error('Error generando catálogo:', e);
+    const loadEl = document.querySelector('#m-catalog-loading');
+    if(loadEl) loadEl.remove();
+    toast('⚠️ No se pudo generar el catálogo');
+  }
+}
+
+/* Imagen de fondo */
+function dibujarImagenFondoPDF(doc, base64, W, H){
+  try{
+    doc.setGState(new doc.GState({ opacity: 0.25 }));
+    /* Adaptar a la página */
+    const ratio = base64 ? 1 : 1;
+    doc.addImage(base64, 'JPEG', 0, 0, W, H, undefined, 'FAST');
+    doc.setGState(new doc.GState({ opacity: 1 }));
+  }catch(e){
+    console.warn('Error al dibujar fondo:', e);
+  }
 }
