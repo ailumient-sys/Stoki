@@ -1,15 +1,13 @@
 /* =========================================================
    views/orders.js — PARTE 1/3
    Lista de pedidos + crear nuevo + selector de cliente
+   v11: comprobantes en IndexedDB
    ========================================================= */
 
 let pedClienteId = null;
 let pedCarrito = [];
 let pedPickerModo = 'single';
 
-/* =========================================================
-   RENDER PRINCIPAL — Lista de pedidos
-   ========================================================= */
 function renderOrders(){
   const cont = document.querySelector('#v-orders');
   if(!cont) return;
@@ -58,9 +56,6 @@ function renderOrders(){
   bindOrdersEvents();
 }
 
-/* =========================================================
-   CARD DE PEDIDO
-   ========================================================= */
 function orderCardHTML(o){
   const cliente = (window.DB.clients || []).find(c => c.id === o.clienteId);
   const clienteNombre = cliente ? cliente.nombre : (o.clienteNombre || 'Sin cliente');
@@ -120,9 +115,6 @@ function orderCardHTML(o){
     </div>`;
 }
 
-/* =========================================================
-   EVENTOS
-   ========================================================= */
 function bindOrdersEvents(){
   const btnNuevo = document.querySelector('#ped-nuevo');
   if(btnNuevo){
@@ -137,9 +129,6 @@ function bindOrdersEvents(){
   });
 }
 
-/* =========================================================
-   CREAR NUEVO PEDIDO
-   ========================================================= */
 function openNewOrder(){
   pedClienteId = null;
   pedCarrito = [];
@@ -245,7 +234,6 @@ function closeNewOrder(){
   pedCarrito = [];
 }
 
-/* ---------- Selector cliente en nuevo pedido ---------- */
 function togglePnoCliente(){
   const picker = document.querySelector('#pno-cli-picker');
   const form = document.querySelector('#pno-cli-form');
@@ -389,9 +377,6 @@ function guardarPnoCliente(){
    Items del pedido + picker productos + guardar pedido
    ========================================================= */
 
-/* =========================================================
-   ITEMS DEL PEDIDO
-   ========================================================= */
 function renderPnoItems(){
   const cont = document.querySelector('#pno-items');
   if(!cont) return;
@@ -500,9 +485,6 @@ function updatePnoTotales(){
     ${ref ? `<div class="ped-ref">${ref}</div>` : ''}`;
 }
 
-/* =========================================================
-   PICKER DE PRODUCTOS (para el pedido)
-   ========================================================= */
 function openPnoPicker(){
   if(document.querySelector('#pno-picker')) return;
 
@@ -645,9 +627,6 @@ function agregarProductoAlPedido(productoId){
   }
 }
 
-/* =========================================================
-   GUARDAR PEDIDO
-   ========================================================= */
 function guardarNuevoPedido(){
   if(!pedClienteId){
     const warning = document.querySelector('#pno-cli-warning');
@@ -737,11 +716,9 @@ function guardarNuevoPedido(){
 /* =========================================================
    views/orders.js — PARTE 3/3
    Detalle + checks + comprobante + cerrar/cancelar + WhatsApp
+   v11: comprobantes en IndexedDB
    ========================================================= */
 
-/* =========================================================
-   DETALLE DEL PEDIDO
-   ========================================================= */
 function openOrderDetail(pedidoId){
   const o = (window.DB.orders || []).find(x => x.id === pedidoId);
   if(!o){ toast('⚠️ Pedido no encontrado'); return; }
@@ -768,7 +745,7 @@ function openOrderDetail(pedidoId){
     : '';
 
   const comprobanteHTML = o.comprobante
-    ? buildComprobantePreview(o.comprobante)
+    ? buildComprobantePreview(o.comprobante, pedidoId)
     : '';
 
   const todosListos = o.pagado && o.enviado && o.entregado;
@@ -904,10 +881,7 @@ function openOrderDetail(pedidoId){
   }
 }
 
-/* =========================================================
-   COMPROBANTE PREVIEW
-   ========================================================= */
-function buildComprobantePreview(c){
+function buildComprobantePreview(c, pedidoId){
   if(!c) return '';
 
   if(c.tipo === 'efectivo'){
@@ -920,7 +894,12 @@ function buildComprobantePreview(c){
             </div>`;
   }
 
-  if(c.tipo === 'imagen' && c.imagen){
+  if(c.tipo === 'imagen'){
+    const comprob = window.COMPROBANTES && window.COMPROBANTES[pedidoId];
+    const img = comprob && comprob.imagen ? comprob.imagen : null;
+
+    if(!img) return '';
+
     return `
       <div style="margin-top:10px">
         <div style="font-size:11px;color:var(--dim);font-weight:800;
@@ -928,7 +907,7 @@ function buildComprobantePreview(c){
           📷 Comprobante
         </div>
         <div class="comprob-preview" style="max-height:180px">
-          <img src="${c.imagen}" alt="Comprobante">
+          <img src="${img}" alt="Comprobante">
         </div>
       </div>`;
   }
@@ -936,9 +915,6 @@ function buildComprobantePreview(c){
   return '';
 }
 
-/* =========================================================
-   MANEJAR CHECK
-   ========================================================= */
 async function manejarCheck(pedidoId, tipo){
   const o = (window.DB.orders || []).find(x => x.id === pedidoId);
   if(!o) return;
@@ -960,6 +936,14 @@ async function manejarCheck(pedidoId, tipo){
 
       o.pagado = false;
       o.comprobante = null;
+
+      try{
+        await eliminarComprobanteDB(pedidoId);
+      }catch(e){
+        console.warn('No se pudo borrar el comprobante:', e);
+      }
+      delete window.COMPROBANTES[pedidoId];
+
       saveDB();
 
       document.querySelector('#m-order-detail').remove();
@@ -985,9 +969,6 @@ async function manejarCheck(pedidoId, tipo){
   }
 }
 
-/* =========================================================
-   MODAL COMPROBANTE
-   ========================================================= */
 let comprobTipo = null;
 let comprobImagen = null;
 
@@ -1115,22 +1096,43 @@ function renderComprobExtra(pedidoId){
   }
 }
 
-function guardarComprobante(pedidoId){
+async function guardarComprobante(pedidoId){
   const o = (window.DB.orders || []).find(x => x.id === pedidoId);
   if(!o) return;
 
+  let comprobante = null;
+  let imagenParaDB = null;
+
   if(comprobTipo === 'efectivo'){
-    o.comprobante = { tipo: 'efectivo' };
+    comprobante = { tipo: 'efectivo' };
+
   } else if(comprobTipo === 'texto'){
     const input = document.querySelector('#comp-ref-input');
     const valor = input ? input.value.trim() : '';
     if(!valor) return toast('⚠️ Ingresá la referencia');
-    o.comprobante = { tipo: 'texto', valor };
+    comprobante = { tipo: 'texto', valor };
+
   } else if(comprobTipo === 'imagen'){
     if(!comprobImagen) return toast('⚠️ Elegí una imagen');
-    o.comprobante = { tipo: 'imagen', imagen: comprobImagen };
+    comprobante = { tipo: 'imagen' };
+    imagenParaDB = comprobImagen;
   }
 
+  try{
+    if(imagenParaDB){
+      const comprobConImagen = { tipo: 'imagen', imagen: imagenParaDB };
+      await guardarComprobanteDB(pedidoId, comprobConImagen);
+      window.COMPROBANTES[pedidoId] = comprobConImagen;
+    } else {
+      await eliminarComprobanteDB(pedidoId);
+      delete window.COMPROBANTES[pedidoId];
+    }
+  }catch(e){
+    console.error('Error al guardar comprobante:', e);
+    return toast('⚠️ No se pudo guardar la imagen');
+  }
+
+  o.comprobante = comprobante;
   o.pagado = true;
   saveDB();
 
@@ -1143,9 +1145,6 @@ function guardarComprobante(pedidoId){
   toast('✅ Pago registrado');
 }
 
-/* =========================================================
-   CERRAR PEDIDO
-   ========================================================= */
 async function cerrarPedido(pedidoId){
   const o = (window.DB.orders || []).find(x => x.id === pedidoId);
   if(!o) return;
@@ -1222,9 +1221,6 @@ async function cerrarPedido(pedidoId){
   toast(`✅ Pedido cerrado · Ticket ${numero}`);
 }
 
-/* =========================================================
-   CANCELAR PEDIDO
-   ========================================================= */
 async function cancelarPedido(pedidoId){
   const o = (window.DB.orders || []).find(x => x.id === pedidoId);
   if(!o) return;
@@ -1240,6 +1236,15 @@ async function cancelarPedido(pedidoId){
   if(!ok) return;
 
   o.estado = 'cancelado';
+
+  /* Limpiar comprobante de IndexedDB */
+  try{
+    await eliminarComprobanteDB(pedidoId);
+  }catch(e){
+    console.warn('No se pudo borrar comprobante:', e);
+  }
+  delete window.COMPROBANTES[pedidoId];
+
   saveDB();
 
   document.querySelector('#m-order-detail').remove();
@@ -1249,9 +1254,6 @@ async function cancelarPedido(pedidoId){
   toast('🚫 Pedido cancelado');
 }
 
-/* =========================================================
-   COMPARTIR PEDIDO POR WHATSAPP (texto)
-   ========================================================= */
 function compartirPedidoWhatsApp(pedidoId){
   const o = (window.DB.orders || []).find(x => x.id === pedidoId);
   if(!o) return;
@@ -1286,11 +1288,6 @@ function compartirPedidoWhatsApp(pedidoId){
   toast('💬 Abriendo WhatsApp...');
 }
 
-/* =========================================================
-   HELPERS
-   ========================================================= */
-
-/* Reservas activas de un producto */
 function getReservadoProducto(productoId){
   let reservado = 0;
 
@@ -1307,7 +1304,6 @@ function getReservadoProducto(productoId){
   return reservado;
 }
 
-/* Init */
 function initOrders(){
   /* Nada específico por ahora */
 }
