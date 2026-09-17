@@ -1,10 +1,8 @@
 /* =========================================================
    views/ticket.js — Modal del ticket + exportar PNG
+   v12: guarda en Documents/Stoki/Facturas/ en APK
    ========================================================= */
 
-/* =========================================================
-   ABRIR TICKET
-   ========================================================= */
 function openTicket(ticketId){
   const t = window.DB.tickets.find(x => x.id === ticketId);
   if(!t){ toast('⚠️ Ticket no encontrado'); return; }
@@ -42,9 +40,6 @@ function closeTicket(){
   if(el) el.remove();
 }
 
-/* =========================================================
-   HTML DEL TICKET (visible en pantalla)
-   ========================================================= */
 function buildTicketHTML(t){
   const fecha = fmtDateTime(t.fecha);
   const refTotal = fmtRefOnly(t.total, t.tasaSnapshot);
@@ -101,9 +96,6 @@ function buildTicketHTML(t){
     </div>`;
 }
 
-/* =========================================================
-   EXPORTAR — Modal con preview + WhatsApp + Descargar
-   ========================================================= */
 async function openTicketExport(ticketId){
   const t = window.DB.tickets.find(x => x.id === ticketId);
   if(!t){ toast('⚠️ Ticket no encontrado'); return; }
@@ -173,9 +165,6 @@ function closeExport(){
   if(el) el.remove();
 }
 
-/* =========================================================
-   GENERADOR DEL CANVAS
-   ========================================================= */
 async function buildTicketCanvas(t){
   const negocio = window.DB.settings.business || {};
   const fecha = fmtDateTime(t.fecha);
@@ -334,38 +323,33 @@ async function buildTicketCanvas(t){
 }
 
 /* =========================================================
-   COMPARTIR / DESCARGAR
+   COMPARTIR / DESCARGAR (v12 — usa exporter.js)
    ========================================================= */
 async function sharePNG(dataURL, numero){
-  try{
-    const res = await fetch(dataURL);
-    const blob = await res.blob();
-    const file = new File([blob], `factura-${numero}.png`, { type: 'image/png' });
+  const nombre = `Factura-${numero}.png`;
+  const titulo = `Factura ${numero}`;
 
-    if(navigator.canShare && navigator.canShare({ files: [file] })){
-      await navigator.share({
-        files: [file],
-        title: `Factura ${numero}`,
-        text: `Factura ${numero}`
-      });
-    } else {
-      toast('⚠️ Tu dispositivo no permite compartir, se descargará');
-      downloadPNG(dataURL, numero);
-    }
-  }catch(e){
-    if(e.name !== 'AbortError'){
-      console.error('Error al compartir:', e);
-      toast('⚠️ No se pudo compartir');
-    }
+  const r = await compartirArchivo(dataURL, nombre, 'Facturas', titulo);
+
+  if(r.ok){
+    if(r.compartido) toast('✅ Abriendo opciones para compartir...');
+    else toast('📁 Guardada en Documents/Stoki/Facturas/');
+  } else if(!r.cancelado){
+    toast('⚠️ No se pudo compartir la factura');
   }
 }
 
-function downloadPNG(dataURL, numero){
-  const a = document.createElement('a');
-  a.href = dataURL;
-  a.download = `factura-${numero}.png`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  toast('⬇️ Factura descargada');
+async function downloadPNG(dataURL, numero){
+  const nombre = `Factura-${numero}.png`;
+  const r = await guardarArchivo(dataURL, nombre, 'Facturas');
+
+  if(r.ok){
+    if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
+      toast('📁 Guardada en Documents/Stoki/Facturas/');
+    } else {
+      toast('⬇️ Factura descargada');
+    }
+  } else {
+    toast('⚠️ No se pudo guardar');
+  }
 }
