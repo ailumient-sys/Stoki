@@ -1,26 +1,26 @@
 /* =========================================================
    core/exporter.js — Guardar y compartir archivos
-   Funciona en Chrome (descarga normal) y APK (Filesystem + Share)
-   v13: debug temporal para diagnosticar errores
+   v14: usa valores numéricos del enum Directory
+        (los enums no existen en el WebView del APK)
    ========================================================= */
 
-/* Detecta si estamos en APK con Capacitor */
+const DIR_DOCUMENTS = 0;   /* Directory.Documents */
+
 function tieneCapacitor(){
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 }
 
-/* Convierte dataURL → base64 puro */
 function dataURLtoBase64(dataURL){
   const partes = dataURL.split(',');
   return partes.length > 1 ? partes[1] : partes[0];
 }
 
-/* Info de debug */
 function infoDebugArchivos(){
   const tieneCap = tieneCapacitor();
-  const tienePlugin = !!(window.Capacitor && window.Capacitor.Plugins);
+  const plugins = (window.Capacitor && window.Capacitor.Plugins)
+    ? Object.keys(window.Capacitor.Plugins).join(', ')
+    : 'ninguno';
   const tieneFs = !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem);
-  const plugins = tienePlugin ? Object.keys(window.Capacitor.Plugins).join(', ') : 'ninguno';
 
   return `tieneCapacitor: ${tieneCap}
 Capacitor global: ${!!window.Capacitor}
@@ -38,17 +38,15 @@ async function guardarArchivo(dataURL, nombreArchivo, subcarpeta){
     /* --- APK con Capacitor --- */
     if(tieneCapacitor() && window.Capacitor.Plugins.Filesystem){
       try{
-        const { Filesystem, Directory } = window.Capacitor.Plugins;
+        const Filesystem = window.Capacitor.Plugins.Filesystem;
         const base64 = dataURLtoBase64(dataURL);
 
         const resultado = await Filesystem.writeFile({
           path: ruta,
           data: base64,
-          directory: Directory.Documents,
+          directory: DIR_DOCUMENTS,
           recursive: true
         });
-
-        alert('✅ GUARDADO OK\n\n' + infoDebugArchivos() + '\n\nRuta: ' + ruta + '\nURI: ' + resultado.uri);
 
         return { ok: true, uri: resultado.uri, ruta };
 
@@ -61,8 +59,6 @@ async function guardarArchivo(dataURL, nombreArchivo, subcarpeta){
 
     /* --- No es Capacitor: fallback navegador --- */
     if(!tieneCapacitor()){
-      alert('⚠️ NO es APK (Chrome web)\n\n' + infoDebugArchivos());
-
       const a = document.createElement('a');
       a.href = dataURL;
       a.download = nombreArchivo;
@@ -74,8 +70,7 @@ async function guardarArchivo(dataURL, nombreArchivo, subcarpeta){
     }
 
     /* --- Es Capacitor pero NO tiene Filesystem --- */
-    alert('❌ Es APK pero NO tiene Filesystem\n\n' + infoDebugArchivos() +
-          '\n\nRevisá package.json y el build.yml');
+    alert('❌ Es APK pero NO tiene Filesystem\n\n' + infoDebugArchivos());
     return { ok: false, error: 'Filesystem no disponible' };
 
   }catch(e){
@@ -93,14 +88,15 @@ async function compartirArchivo(dataURL, nombreArchivo, subcarpeta, titulo){
     /* --- APK con Capacitor --- */
     if(tieneCapacitor() && window.Capacitor.Plugins.Filesystem && window.Capacitor.Plugins.Share){
       try{
-        const { Filesystem, Directory, Share } = window.Capacitor.Plugins;
+        const Filesystem = window.Capacitor.Plugins.Filesystem;
+        const Share = window.Capacitor.Plugins.Share;
         const ruta = subcarpeta ? `Stoki/${subcarpeta}/${nombreArchivo}` : `Stoki/${nombreArchivo}`;
         const base64 = dataURLtoBase64(dataURL);
 
         const resultado = await Filesystem.writeFile({
           path: ruta,
           data: base64,
-          directory: Directory.Documents,
+          directory: DIR_DOCUMENTS,
           recursive: true
         });
 
