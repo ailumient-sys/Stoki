@@ -570,5 +570,4 @@ async function guardarProducto(){
   renderAll();
   closeModal('#m-add');
   toast('✅ Producto guardado');
-  setTab(1);
      }
