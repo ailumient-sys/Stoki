@@ -1,9 +1,9 @@
 /* =========================================================
    core/exporter.js — Guardar y compartir archivos
-   v15: crea la carpeta padre antes de escribir
+   v16: mkdir paso a paso con debug
    ========================================================= */
 
-const DIR_DOCUMENTS = 0;   /* Directory.Documents */
+const DIR_DOCUMENTS = 0;
 
 function tieneCapacitor(){
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -19,33 +19,35 @@ function infoDebugArchivos(){
   const plugins = (window.Capacitor && window.Capacitor.Plugins)
     ? Object.keys(window.Capacitor.Plugins).join(', ')
     : 'ninguno';
-  const tieneFs = !!(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem);
-
   return `tieneCapacitor: ${tieneCap}
-Plugins disponibles: ${plugins}
-Filesystem: ${tieneFs}`;
+Plugins: ${plugins}`;
 }
 
 /* =========================================================
-   ASEGURAR CARPETA
-   Intenta crear la carpeta completa. Si ya existe, ignora el error.
+   ASEGURAR CARPETA — paso a paso con debug
    ========================================================= */
-async function asegurarCarpeta(Filesystem, ruta, directory){
-  if(!ruta) return;
+async function asegurarCarpeta(Filesystem, subcarpeta){
+  const niveles = subcarpeta
+    ? ['Stoki', `Stoki/${subcarpeta}`]
+    : ['Stoki'];
 
-  try{
-    await Filesystem.mkdir({
-      path: ruta,
-      directory: directory,
-      recursive: true
-    });
-  }catch(err){
-    /* "Directory exists" o "File exists" son normales. Ignorar. */
-    const msg = (err && err.message) ? err.message.toLowerCase() : '';
-    if(!msg.includes('exist')){
-      console.warn('mkdir warning:', err);
+  const resultados = [];
+
+  for(const nivel of niveles){
+    try{
+      await Filesystem.mkdir({
+        path: nivel,
+        directory: DIR_DOCUMENTS,
+        recursive: false
+      });
+      resultados.push(`✅ mkdir ${nivel}`);
+    }catch(err){
+      const msg = (err && err.message) ? err.message : String(err);
+      resultados.push(`⚠️ mkdir ${nivel}: ${msg}`);
     }
   }
+
+  return resultados.join('\n');
 }
 
 /* =========================================================
@@ -54,7 +56,6 @@ async function asegurarCarpeta(Filesystem, ruta, directory){
 async function guardarArchivo(dataURL, nombreArchivo, subcarpeta){
   try{
     const ruta      = subcarpeta ? `Stoki/${subcarpeta}/${nombreArchivo}` : `Stoki/${nombreArchivo}`;
-    const rutaDir   = subcarpeta ? `Stoki/${subcarpeta}` : 'Stoki';
 
     /* --- APK con Capacitor --- */
     if(tieneCapacitor() && window.Capacitor.Plugins.Filesystem){
@@ -62,10 +63,10 @@ async function guardarArchivo(dataURL, nombreArchivo, subcarpeta){
         const Filesystem = window.Capacitor.Plugins.Filesystem;
         const base64 = dataURLtoBase64(dataURL);
 
-        /* 1. Crear la carpeta padre primero */
-        await asegurarCarpeta(Filesystem, rutaDir, DIR_DOCUMENTS);
+        /* 1. Crear carpetas */
+        const logMkdir = await asegurarCarpeta(Filesystem, subcarpeta);
 
-        /* 2. Escribir el archivo */
+        /* 2. Escribir archivo */
         const resultado = await Filesystem.writeFile({
           path: ruta,
           data: base64,
@@ -73,29 +74,30 @@ async function guardarArchivo(dataURL, nombreArchivo, subcarpeta){
           recursive: true
         });
 
+        alert('✅ GUARDADO OK\n\n' +
+              infoDebugArchivos() +
+              '\n\n' + logMkdir +
+              '\n\nRuta: ' + ruta +
+              '\nURI: ' + resultado.uri);
+
         return { ok: true, uri: resultado.uri, ruta };
 
       }catch(err){
         const msgErr = err && err.message ? err.message : JSON.stringify(err);
-        alert('❌ ERROR en Filesystem:\n\n' + infoDebugArchivos() + '\n\nError: ' + msgErr);
+        alert('❌ ERROR:\n\n' + infoDebugArchivos() + '\n\nError: ' + msgErr);
         return { ok: false, error: msgErr };
       }
     }
 
-    /* --- No es Capacitor: fallback navegador --- */
-    if(!tieneCapacitor()){
-      const a = document.createElement('a');
-      a.href = dataURL;
-      a.download = nombreArchivo;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    /* --- Fallback navegador --- */
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = nombreArchivo;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 
-      return { ok: true, ruta: nombreArchivo };
-    }
-
-    alert('❌ Es APK pero NO tiene Filesystem\n\n' + infoDebugArchivos());
-    return { ok: false, error: 'Filesystem no disponible' };
+    return { ok: true, ruta: nombreArchivo };
 
   }catch(e){
     const msgErr = e && e.message ? e.message : JSON.stringify(e);
@@ -109,20 +111,16 @@ async function guardarArchivo(dataURL, nombreArchivo, subcarpeta){
    ========================================================= */
 async function compartirArchivo(dataURL, nombreArchivo, subcarpeta, titulo){
   try{
-    const ruta    = subcarpeta ? `Stoki/${subcarpeta}/${nombreArchivo}` : `Stoki/${nombreArchivo}`;
-    const rutaDir = subcarpeta ? `Stoki/${subcarpeta}` : 'Stoki';
+    const ruta = subcarpeta ? `Stoki/${subcarpeta}/${nombreArchivo}` : `Stoki/${nombreArchivo}`;
 
-    /* --- APK con Capacitor --- */
     if(tieneCapacitor() && window.Capacitor.Plugins.Filesystem && window.Capacitor.Plugins.Share){
       try{
         const Filesystem = window.Capacitor.Plugins.Filesystem;
         const Share = window.Capacitor.Plugins.Share;
         const base64 = dataURLtoBase64(dataURL);
 
-        /* 1. Crear carpeta padre */
-        await asegurarCarpeta(Filesystem, rutaDir, DIR_DOCUMENTS);
+        const logMkdir = await asegurarCarpeta(Filesystem, subcarpeta);
 
-        /* 2. Escribir archivo */
         const resultado = await Filesystem.writeFile({
           path: ruta,
           data: base64,
@@ -130,7 +128,6 @@ async function compartirArchivo(dataURL, nombreArchivo, subcarpeta, titulo){
           recursive: true
         });
 
-        /* 3. Compartir */
         await Share.share({
           title: titulo || nombreArchivo,
           url: resultado.uri
@@ -148,7 +145,7 @@ async function compartirArchivo(dataURL, nombreArchivo, subcarpeta, titulo){
       }
     }
 
-    /* --- Navegador: Web Share API --- */
+    /* Navegador: Web Share */
     if(navigator.canShare && navigator.canShare({ files: [new File([], nombreArchivo)] })){
       const res = await fetch(dataURL);
       const blob = await res.blob();
@@ -162,14 +159,12 @@ async function compartirArchivo(dataURL, nombreArchivo, subcarpeta, titulo){
       return { ok: true, compartido: true };
     }
 
-    /* --- Fallback: descarga --- */
     return await guardarArchivo(dataURL, nombreArchivo, subcarpeta);
 
   }catch(e){
     if(e.name === 'AbortError' || (e.message && e.message.includes('cancel'))){
       return { ok: false, cancelado: true };
     }
-    console.error('Error al compartir:', e);
     return { ok: false, error: e.message || 'Error desconocido' };
   }
 }
