@@ -240,10 +240,71 @@ function eliminarFoto(idx){
 }
 
 function abrirSelectorFoto(){
-  const input = $('#f-file');
-  input.removeAttribute('capture');
-  input.multiple = nuevaFotos.length < MAX_FOTOS - 1;
-  input.click();
+  mostrarMenuFoto('f-file', nuevaFotos.length < MAX_FOTOS - 1);
+}
+
+/* Menú de opción: cámara o galería */
+function mostrarMenuFoto(inputId, permitirMultiple){
+  if(document.querySelector('#m-foto-menu')) return;
+
+  const html = `
+    <div class="overlay centered open" id="m-foto-menu" style="z-index:300">
+      <div class="sheet" style="max-width:320px;padding:16px">
+        <h2 style="text-align:center;margin-bottom:16px">Agregar foto</h2>
+
+        <button class="foto-menu-btn" data-modo="camara" type="button">
+          <span class="foto-menu-icon">📷</span>
+          <span class="foto-menu-text">
+            <span class="foto-menu-title">Tomar foto</span>
+            <span class="foto-menu-sub">Usar la cámara</span>
+          </span>
+        </button>
+
+        <button class="foto-menu-btn" data-modo="galeria" type="button">
+          <span class="foto-menu-icon">🖼️</span>
+          <span class="foto-menu-text">
+            <span class="foto-menu-title">Elegir de galería</span>
+            <span class="foto-menu-sub">${permitirMultiple ? 'Podés elegir varias' : 'Elegir una foto'}</span>
+          </span>
+        </button>
+
+        <button class="btn-ghost" id="foto-menu-cancel" style="margin-top:10px">Cancelar</button>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  const cerrar = () => {
+    const el = document.querySelector('#m-foto-menu');
+    if(el) el.remove();
+  };
+
+  document.querySelector('#foto-menu-cancel').addEventListener('click', cerrar);
+  document.querySelector('#m-foto-menu').addEventListener('click', e => {
+    if(e.target.id === 'm-foto-menu') cerrar();
+  });
+
+  document.querySelectorAll('.foto-menu-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const modo = btn.dataset.modo;
+      const input = document.getElementById(inputId);
+      cerrar();
+
+      if(!input) return;
+
+      if(modo === 'camara'){
+        input.setAttribute('capture', 'environment');
+        input.multiple = false;
+      } else {
+        input.removeAttribute('capture');
+        input.multiple = permitirMultiple;
+      }
+
+      /* Reset para permitir volver a elegir el mismo archivo */
+      input.value = '';
+      setTimeout(() => input.click(), 100);
+    });
+  });
 }
 
 async function procesarFotos(e){

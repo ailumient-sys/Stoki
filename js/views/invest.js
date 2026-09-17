@@ -92,7 +92,15 @@ function buildInvestPanel(){
       `
     }
 
-    <button class="btn-ghost" id="invest-add">+ Agregar producto a la lista</button>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn-ghost" id="invest-add" style="flex:1;margin-top:0">
+        + Agregar producto
+      </button>
+      <button class="btn-ghost" id="invest-calc" style="flex:0 0 auto;width:auto;padding:14px 16px;margin-top:0"
+              title="Calculadora de compras">
+        🧮
+      </button>
+    </div>
 
     ${data.productos.length > 0 ? `
       <button class="btn-main" id="invest-finish">
@@ -401,6 +409,9 @@ function bindInvestPanelEvents(){
 
   const addBtn = $('#invest-add');
   if(addBtn) addBtn.addEventListener('click', () => openInvestProduct(null));
+
+  const calcBtn = $('#invest-calc');
+  if(calcBtn) calcBtn.addEventListener('click', () => abrirCalculadora());
 
   const finishBtn = $('#invest-finish');
   if(finishBtn) finishBtn.addEventListener('click', openFinishPurchase);
@@ -744,10 +755,7 @@ function eliminarFotoInv(idx){
 }
 
 function abrirSelectorFotoInv(){
-  const input = $('#ip-file');
-  input.removeAttribute('capture');
-  input.multiple = invNuevaFotos.length < INV_MAX_FOTOS - 1;
-  input.click();
+  mostrarMenuFoto('ip-file', invNuevaFotos.length < INV_MAX_FOTOS - 1);
 }
 
 async function procesarFotosInv(e){

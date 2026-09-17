@@ -1394,3 +1394,202 @@
   font-variant-numeric: tabular-nums;
   flex: 0 0 auto;
 }
+
+/* =========================================================
+   MENÚ DE FOTO (cámara / galería)
+   ========================================================= */
+.foto-menu-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg3);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--txt);
+  text-align: left;
+  margin-bottom: 8px;
+  transition: all .15s;
+}
+
+.foto-menu-btn:active {
+  background: var(--bg4);
+  transform: scale(.98);
+}
+
+.foto-menu-icon {
+  font-size: 28px;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 197, 94, .12);
+  border-radius: 12px;
+}
+
+.foto-menu-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.foto-menu-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--txt);
+}
+
+.foto-menu-sub {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+/* =========================================================
+   CALCULADORA DE COMPRAS
+   ========================================================= */
+.calc-input-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.calc-input-row input {
+  background: var(--bg3);
+  border: 1.5px solid transparent;
+  color: var(--txt);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  min-height: 44px;
+}
+
+.calc-input-row input:focus {
+  border-color: var(--green);
+}
+
+.calc-input-row input#calc-nombre { flex: 1; min-width: 0; }
+.calc-input-row input#calc-precio { width: 80px; }
+
+.calc-input-row button {
+  background: var(--green);
+  color: #04140a;
+  border: 0;
+  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  font-weight: 900;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.calc-input-row button:active {
+  filter: brightness(.9);
+  transform: scale(.95);
+}
+
+.calc-lista {
+  max-height: 40dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 12px;
+}
+
+.calc-vacio {
+  text-align: center;
+  padding: 30px 20px;
+}
+
+.calc-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+
+.calc-item-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.calc-item-nombre {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--txt);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 2px;
+}
+
+.calc-item-meta {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.calc-item-total {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--txt);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.calc-item-del {
+  background: rgba(239, 68, 68, .14);
+  border: 0;
+  color: var(--red);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.calc-total {
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 14px;
+  border: 1.5px solid var(--line);
+  transition: all .2s;
+}
+
+.calc-total.con-items {
+  background: linear-gradient(135deg, rgba(34,197,94,.10), rgba(22,163,74,.05));
+  border-color: rgba(34,197,94,.35);
+}
+
+.calc-total-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--dim);
+}
+
+.calc-total-line b {
+  font-size: 22px;
+  color: var(--green);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.5px;
+}
