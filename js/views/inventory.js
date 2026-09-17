@@ -151,6 +151,15 @@ function buildInventarioToolbar(){
           📊 Inventario
         </div>
         <div style="display:flex;gap:6px">
+          <button type="button" id="inv-quickadd"
+                  style="background:rgba(59,130,246,.12);
+                         border:1px solid rgba(59,130,246,.35);
+                         border-radius:8px;padding:7px 10px;color:#60a5fa;
+                         font-size:11px;font-weight:800;font-family:inherit;
+                         cursor:pointer"
+                  title="Agregar varios">
+            ⚡
+          </button>
           <button type="button" id="inv-export"
                   style="background:rgba(34,197,94,.12);
                          border:1px solid rgba(34,197,94,.35);
@@ -369,6 +378,20 @@ function bindInventarioEvents(){
       invCatsExpandidas[id] = abierto;
     });
   });
+
+  /* Botón Quick Add (agregar múltiples) */
+  const btnQA = $('#inv-quickadd');
+  if(btnQA){
+    btnQA.addEventListener('click', e => {
+      e.stopPropagation();
+      if(typeof abrirQuickAdd === 'function'){
+        window.QA = { items: [] };
+        abrirQuickAdd();
+      } else {
+        toast('⚠️ Función no disponible');
+      }
+    });
+  }
 
   /* Botón Exportar unificado */
   const btnExport = $('#inv-export');

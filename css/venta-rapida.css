@@ -261,3 +261,141 @@
   50%  { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
+
+/* =========================================================
+   QUICK ADD — Agregar varios productos
+   ========================================================= */
+
+.qa-opt {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--bg3);
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--txt);
+  text-align: left;
+  margin-bottom: 8px;
+  transition: all .15s;
+}
+
+.qa-opt:active {
+  background: var(--bg4);
+  transform: scale(.98);
+}
+
+.qa-opt-icon {
+  font-size: 28px;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(34, 197, 94, .12);
+  border-radius: 12px;
+}
+
+.qa-opt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.qa-opt-title {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--txt);
+}
+
+.qa-opt-sub {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+/* Cards de la lista */
+.qa-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg3);
+  border-radius: 12px;
+  margin-bottom: 8px;
+}
+
+.qa-thumb {
+  width: 70px;
+  height: 70px;
+  border-radius: 10px;
+  background: var(--bg4);
+  background-size: cover;
+  background-position: center;
+  flex: 0 0 auto;
+}
+
+.qa-fields {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.qa-input {
+  background: var(--bg4);
+  border: 1.5px solid transparent;
+  color: var(--txt);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  min-height: 36px;
+  font-weight: 700;
+}
+
+.qa-input:focus {
+  border-color: var(--green);
+}
+
+.qa-nombre {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.qa-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.qa-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.qa-del {
+  background: rgba(239, 68, 68, .14);
+  color: var(--red);
+  border: 0;
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.qa-vacio {
+  text-align: center;
+  padding: 40px 20px;
+}
