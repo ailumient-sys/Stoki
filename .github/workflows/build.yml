@@ -62,6 +62,14 @@ jobs:
           print('✅ Permisos inyectados en AndroidManifest.xml')
           "
 
+      - name: Copiar iconos y splash
+        run: |
+          cp -r android-res/mipmap-* android/app/src/main/res/ 2>/dev/null || true
+          cp android-res/icon-192.png www/icon-192.png
+          cp android-res/icon-512.png www/icon-512.png
+          cp android-res/splash.png android/app/src/main/res/drawable/splash.png 2>/dev/null || true
+          echo "✅ Iconos copiados"
+
       - name: Sincronizar
         run: npx cap sync android
 
