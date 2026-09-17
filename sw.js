@@ -2,7 +2,7 @@
    sw.js — Caché offline
    ========================================================= */
 
-const CACHE = 'stoki-v58';
+const CACHE = 'stoki-v59';
 
 const ASSETS = [
   './',
@@ -21,6 +21,7 @@ const ASSETS = [
   './css/export-pdf-modal.css',
   './css/help.css',
   './css/apariencia.css',
+  './css/shopping-lists.css',
   './css/global-search.css',
 
   './js/core/storage.js',
@@ -55,6 +56,7 @@ const ASSETS = [
   './js/views/help.js',
   './js/views/apariencia.js',
   './js/views/calculadora.js',
+  './js/views/shopping-lists.js',
   './js/views/global-search.js',
   './js/views/more-menu.js',
 

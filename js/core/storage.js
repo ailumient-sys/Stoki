@@ -43,7 +43,8 @@ window.DB = {
     }
   },
   ventaCounter: {},
-  historialCompras: []
+  historialCompras: [],
+  shoppingLists: []
 };
 
 window.SESSION      = null;
@@ -329,6 +330,7 @@ async function loadDB(){
       window.DB.orders     = parsed.orders     || [];
       window.DB.categories = parsed.categories || [];
       window.DB.historialCompras = parsed.historialCompras || [];
+      window.DB.shoppingLists = parsed.shoppingLists || [];
       window.DB.settings   = Object.assign(
         { currency: 'USD', refCurrency: 'VES', tasaDia: 0, tasaActualizada: null },
         parsed.settings || {}
@@ -679,6 +681,7 @@ async function importBackup(file){
       window.DB.orders     = parsed.orders     || [];
       window.DB.categories = parsed.categories || [];
       window.DB.historialCompras = parsed.historialCompras || [];
+      window.DB.shoppingLists = parsed.shoppingLists || [];
       window.DB.settings = Object.assign(
         { currency: 'USD', refCurrency: 'VES', tasaDia: 0, tasaActualizada: null },
         parsed.settings || {}

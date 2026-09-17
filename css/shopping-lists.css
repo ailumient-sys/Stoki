@@ -1,0 +1,384 @@
+/* =========================================================
+   shopping-lists.css
+   ========================================================= */
+
+/* ---- Lista guardadas ---- */
+.sl-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.sl-title {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--txt);
+  letter-spacing: -.3px;
+}
+
+.sl-listas {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sl-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px;
+  background: var(--bg2);
+  border-radius: 14px;
+  cursor: pointer;
+  box-shadow: var(--e1);
+  transition: transform .12s;
+}
+
+.sl-card:active { transform: scale(.98); }
+
+.sl-card-info { flex: 1; min-width: 0; }
+
+.sl-card-nombre {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--txt);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sl-card-meta {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 700;
+}
+
+.sl-card-del {
+  background: rgba(239, 68, 68, .14);
+  color: var(--red);
+  border: 0;
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.sl-card-chevron {
+  font-size: 22px;
+  color: var(--dim);
+  font-weight: 300;
+  flex: 0 0 auto;
+}
+
+/* ---- Topbar de lista activa ---- */
+.sl-topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sl-back {
+  background: var(--bg3);
+  border: 0;
+  color: var(--txt);
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-family: inherit;
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+.sl-nombre-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg3);
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--txt);
+  font-family: inherit;
+  outline: none;
+  min-height: 40px;
+}
+
+.sl-nombre-input:focus { border-color: var(--green); }
+
+.sl-save-icon {
+  background: var(--green);
+  color: #04140a;
+  border: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  font-size: 18px;
+  font-family: inherit;
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 0;
+}
+
+.sl-save-icon:active { filter: brightness(.9); }
+
+/* ---- Input de agregar ---- */
+.sl-input-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.sl-input-row input {
+  background: var(--bg3);
+  border: 1.5px solid transparent;
+  color: var(--txt);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  min-height: 44px;
+}
+
+.sl-input-row input:focus { border-color: var(--green); }
+
+.sl-input-row input#sl-add-nombre { flex: 1; min-width: 0; }
+.sl-input-row input#sl-add-precio { width: 78px; }
+
+.sl-input-row button {
+  background: var(--green);
+  color: #04140a;
+  border: 0;
+  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  font-weight: 900;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.sl-input-row button:active { filter: brightness(.9); transform: scale(.95); }
+
+/* ---- Items ---- */
+.sl-items {
+  margin-bottom: 14px;
+}
+
+.sl-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border-radius: 10px;
+  margin-bottom: 6px;
+  transition: all .15s;
+}
+
+.sl-item.comprado {
+  opacity: .55;
+  background: rgba(34, 197, 94, .06);
+}
+
+.sl-item.comprado .sl-item-nombre {
+  text-decoration: line-through;
+}
+
+.sl-item-check {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  background: transparent;
+  color: #04140a;
+  font-size: 16px;
+  font-weight: 900;
+  font-family: inherit;
+  cursor: pointer;
+  flex: 0 0 auto;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sl-item.comprado .sl-item-check {
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.sl-item-info { flex: 1; min-width: 0; }
+
+.sl-item-nombre {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--txt);
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sl-item-meta {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.sl-item-total {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--txt);
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+
+.sl-item-del {
+  background: rgba(239, 68, 68, .14);
+  border: 0;
+  color: var(--red);
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.sl-vacio {
+  text-align: center;
+  padding: 30px 20px;
+  background: var(--bg3);
+  border-radius: 12px;
+}
+
+/* ---- Totales ---- */
+.sl-totales {
+  background: linear-gradient(135deg, rgba(34,197,94,.08), rgba(22,163,74,.04));
+  border: 1.5px solid rgba(34,197,94,.3);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+.sl-total-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--dim);
+  margin-bottom: 4px;
+}
+
+.sl-total-line:last-child { margin-bottom: 0; }
+
+.sl-total-line b {
+  font-size: 20px;
+  color: var(--green);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.3px;
+}
+
+.sl-total-ref {
+  text-align: right;
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-bottom: 6px;
+}
+
+.sl-total-divider {
+  height: 1px;
+  background: rgba(34,197,94,.25);
+  margin: 8px 0;
+}
+
+.sl-total-comprado b {
+  color: var(--green);
+  font-size: 14px;
+}
+
+.sl-total-pendiente b {
+  color: var(--amber);
+  font-size: 14px;
+}
+
+/* ---- Acciones ---- */
+.sl-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* ---- Modal de cuotas ---- */
+.cuo-resultado {
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 14px;
+  margin-top: 16px;
+}
+
+.cuo-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--dim);
+  padding: 5px 0;
+}
+
+.cuo-line b {
+  color: var(--txt);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.cuo-ref {
+  text-align: right;
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-top: -2px;
+  margin-bottom: 4px;
+}
+
+.cuo-line-destacada {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  margin: 6px 0;
+  padding: 10px 0;
+}
+
+.cuo-line-grande {
+  padding: 8px 0 4px;
+}
+
+.cuo-line-grande b {
+  font-size: 22px;
+  letter-spacing: -.5px;
+}
+
+.cuo-divider {
+  height: 1px;
+  background: var(--line);
+  margin: 8px 0;
+}

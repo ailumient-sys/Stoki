@@ -9,10 +9,10 @@
 
 let currentTab = 0;
 
-const MORE_TABS = [0, 4, 6, 7];
+const MORE_TABS = [0, 4, 6, 7, 8];
 
 function setTab(i){
-  if(i < 0 || i > 7) return;
+  if(i < 0 || i > 8) return;
   currentTab = i;
 
   $$('.view').forEach((view, idx) => {
@@ -49,6 +49,7 @@ function setTab(i){
   if(i === 5 && typeof renderOrders === 'function')      renderOrders();
   if(i === 6 && typeof renderClients === 'function')     renderClients();
   if(i === 7 && typeof renderSuppliers === 'function')   renderSuppliers();
+  if(i === 8 && typeof renderListas === 'function')      renderListas();
 }
 
 function renderAll(){
@@ -60,6 +61,7 @@ function renderAll(){
   if(typeof renderOrders === 'function')     renderOrders();
   if(typeof renderClients === 'function')    renderClients();
   if(typeof renderSuppliers === 'function')  renderSuppliers();
+  if(typeof renderListas === 'function')     renderListas();
   if(typeof updateTasaBtn === 'function')    updateTasaBtn();
   if(typeof updateCartFab === 'function')    updateCartFab();
 }
@@ -84,7 +86,7 @@ function initSwipe(){
     const dy = e.changedTouches[0].clientY - swipeY;
 
     if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5){
-      if(dx < 0 && currentTab < 7) setTab(currentTab + 1);
+      if(dx < 0 && currentTab < 8) setTab(currentTab + 1);
       if(dx > 0 && currentTab > 0) setTab(currentTab - 1);
     }
   }, { passive: true });
