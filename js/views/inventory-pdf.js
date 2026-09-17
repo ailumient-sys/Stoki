@@ -69,11 +69,34 @@ async function dibujarMarcaDeAguaLogoPDF(doc, W, H){
    ========================================================= */
 function previsualizarPDF(doc, nombreArchivo, tipo){
   const pdfDataUri = doc.output('datauristring');
+  const esAPK = typeof tieneCapacitor === 'function' && tieneCapacitor();
 
   const overlay = document.createElement('div');
   overlay.className = 'overlay centered open';
   overlay.id = 'm-pdf-preview';
   overlay.style.zIndex = '200';
+
+  const bodyHTML = esAPK
+    ? `
+      <div style="text-align:center;padding:30px 10px">
+        <div style="font-size:70px;margin-bottom:16px">📄</div>
+        <div style="font-size:15px;font-weight:800;color:var(--txt);
+                    margin-bottom:8px">PDF listo</div>
+        <div style="font-size:12px;color:var(--dim);line-height:1.5">
+          El archivo se generó correctamente.<br>
+          Tocá <b>Guardar / Compartir</b> para verlo<br>
+          en tu visor o enviarlo.
+        </div>
+      </div>
+    `
+    : `
+      <div style="flex:1;overflow:hidden;border-radius:10px;
+                  background:#fff;border:1px solid var(--line)">
+        <iframe src="${pdfDataUri}"
+                style="width:100%;height:65vh;border:0;background:#fff">
+        </iframe>
+      </div>
+    `;
 
   overlay.innerHTML = `
     <div class="sheet" style="max-width:96vw;max-height:96vh;
@@ -86,14 +109,9 @@ function previsualizarPDF(doc, nombreArchivo, tipo){
         ${esc(nombreArchivo)}
       </div>
 
-      <div style="flex:1;overflow:hidden;border-radius:10px;
-                  background:#fff;border:1px solid var(--line)">
-        <iframe src="${pdfDataUri}"
-                style="width:100%;height:70vh;border:0;background:#fff">
-        </iframe>
-      </div>
+      ${bodyHTML}
 
-      <button class="btn-main" id="pdf-prev-save" style="margin-top:10px">
+      <button class="btn-main" id="pdf-prev-save" style="margin-top:12px">
         📤 Guardar / Compartir
       </button>
     </div>
@@ -111,9 +129,9 @@ function previsualizarPDF(doc, nombreArchivo, tipo){
 
   document.querySelector('#pdf-prev-save').addEventListener('click', async () => {
     overlay.remove();
-    const base64 = doc.output('datauristring');
 
-    if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
+    if(esAPK){
+      const base64 = doc.output('datauristring');
       const r = await guardarArchivo(base64, nombreArchivo, tipo);
       if(!r.ok){
         toast('⚠️ No se pudo guardar');
@@ -124,7 +142,6 @@ function previsualizarPDF(doc, nombreArchivo, tipo){
     }
   });
 }
-
 /* =========================================================
    EXPORTAR INVENTARIO
    ========================================================= */
