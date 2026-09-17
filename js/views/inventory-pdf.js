@@ -36,11 +36,12 @@ async function obtenerLogoPDF(){
 /* =========================================================
    MARCA DE AGUA CON LOGO
    ========================================================= */
-async function dibujarMarcaDeAguaLogoPDF(doc, W, H){
+async function dibujarMarcaDeAguaLogoPDF(doc, W, H, opacidad){
+  const op = (typeof opacidad === 'number') ? opacidad : 0.05;
   const logo = await obtenerLogoPDF();
   if(!logo) return;
 
-  doc.setGState(new doc.GState({ opacity: 0.05 }));
+  doc.setGState(new doc.GState({ opacity: op }));
   const isPortrait = H > W;
 
   try{
@@ -401,17 +402,29 @@ function dibujarCardCatalogoPDF(doc, x, y, w, h, imgH, producto, imgData){
   doc.roundedRect(x, y, w, h, 3, 3, 'S');
 
   const pad = 2;
-  const imgW = w - pad * 2;
-  const imgHReal = imgH - pad;
+  let imgW = w - pad * 2;
+  let imgHReal = imgH - pad;
+
+  /* Mantener aspect ratio 5:3 (como prepara prepararImagenCatalogo) */
+  const aspect = 500 / 300;
+  if(imgW / imgHReal > aspect){
+    imgW = imgHReal * aspect;
+  } else {
+    imgHReal = imgW / aspect;
+  }
+
+  /* Centrar horizontalmente */
+  const imgX = x + pad + ((w - pad * 2) - imgW) / 2;
+  const imgY = y + pad;
 
   if(imgData){
     try{
-      doc.addImage(imgData, 'JPEG', x + pad, y + pad, imgW, imgHReal, undefined, 'FAST');
+      doc.addImage(imgData, 'JPEG', imgX, imgY, imgW, imgHReal, undefined, 'FAST');
     }catch(e){
-      dibujarPlaceholderFoto(doc, x + pad, y + pad, imgW, imgHReal, producto);
+      dibujarPlaceholderFoto(doc, x + pad, y + pad, w - pad * 2, imgH - pad, producto);
     }
   } else {
-    dibujarPlaceholderFoto(doc, x + pad, y + pad, imgW, imgHReal, producto);
+    dibujarPlaceholderFoto(doc, x + pad, y + pad, w - pad * 2, imgH - pad, producto);
   }
 
   doc.setFont('helvetica', 'bold');
@@ -809,8 +822,8 @@ async function generarCatalogoPDF(op, noPreview){
       day: '2-digit', month: '2-digit', year: 'numeric'
     });
 
-    const cols = op.columnas || 2;
-    const porPagina = op.filas || 3;
+    const cols = 2;
+    const porPagina = 3;
     const gapX = 8;
     const gapY = 6;
     const cardW = (W - 2 * M - gapX * (cols - 1)) / cols;
@@ -862,8 +875,10 @@ async function generarCatalogoPDF(op, noPreview){
 
         if(op.imagenFondo){
           dibujarImagenFondoPDF(doc, op.imagenFondo, W, H);
+          await dibujarMarcaDeAguaLogoPDF(doc, W, H, 0.30);
+        } else {
+          await dibujarMarcaDeAguaLogoPDF(doc, W, H, 0.05);
         }
-        await dibujarMarcaDeAguaLogoPDF(doc, W, H);
 
         if(paginaGrupo === 0){
           dibujarHeaderCatalogoPDF(doc, { W, M, nombreNegocio, fecha, total: grupo.items.length, categoriaNombre: grupo.nombre });
@@ -885,6 +900,14 @@ async function generarCatalogoPDF(op, noPreview){
 
           dibujarCardCatalogoPDF(doc, x, y, cardW, cardH, imgH, grupo.items[i], imagenesMap[grupo.items[i].id]);
         }
+
+        /* Footer con categoría y página */
+        dibujarFooterCategoriaPDF(doc, {
+          W, H, M,
+          categoriaNombre: grupo.nombre,
+          paginaActual: paginaGrupo + 1,
+          paginasTotales: totalGrupo
+        });
       }
     }
 

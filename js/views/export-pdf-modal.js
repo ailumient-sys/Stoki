@@ -4,8 +4,6 @@
 
 window.expOpciones = {
   tipo: 'catalogo',        /* 'inventario' | 'catalogo' | 'ambos' */
-  columnas: 2,
-  filas: 3,
   separarCategorias: false,
   imagenFondo: null,       /* base64 o null */
   imagenFondoNombre: null,
@@ -34,29 +32,6 @@ function abrirModalExportPDF(){
             <button class="exp-tipo-btn" data-tipo="ambos">
               <span class="icon">📚</span> Ambos
             </button>
-          </div>
-        </div>
-
-        <!-- Columnas -->
-        <div class="exp-section" id="expm-cols-section">
-          <div class="exp-section-title">Columnas</div>
-          <div class="exp-num-grid" id="expm-cols">
-            <button class="exp-num-btn" data-val="1">1</button>
-            <button class="exp-num-btn" data-val="2">2</button>
-            <button class="exp-num-btn" data-val="3">3</button>
-            <button class="exp-num-btn" data-val="4">4</button>
-          </div>
-        </div>
-
-        <!-- Filas -->
-        <div class="exp-section" id="expm-filas-section">
-          <div class="exp-section-title">Productos por página</div>
-          <div class="exp-num-grid" id="expm-filas">
-            <button class="exp-num-btn" data-val="3">3</button>
-            <button class="exp-num-btn" data-val="4">4</button>
-            <button class="exp-num-btn" data-val="6">6</button>
-            <button class="exp-num-btn" data-val="8">8</button>
-            <button class="exp-num-btn" data-val="9">9</button>
           </div>
         </div>
 
@@ -112,21 +87,7 @@ function bindModalExportPDF(){
     });
   });
 
-  /* Columnas */
-  document.querySelectorAll('#expm-cols .exp-num-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      expOpciones.columnas = +btn.dataset.val;
-      actualizarModalExportPDF();
-    });
-  });
 
-  /* Filas */
-  document.querySelectorAll('#expm-filas .exp-num-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      expOpciones.filas = +btn.dataset.val;
-      actualizarModalExportPDF();
-    });
-  });
 
   /* Separar categorías */
   document.querySelector('#expm-sep-cat').addEventListener('click', () => {
@@ -179,23 +140,7 @@ function actualizarModalExportPDF(){
     btn.classList.toggle('active', btn.dataset.tipo === expOpciones.tipo);
   });
 
-  /* Columnas */
-  document.querySelectorAll('#expm-cols .exp-num-btn').forEach(btn => {
-    btn.classList.toggle('active', +btn.dataset.val === expOpciones.columnas);
-  });
 
-  /* Filas */
-  document.querySelectorAll('#expm-filas .exp-num-btn').forEach(btn => {
-    btn.classList.toggle('active', +btn.dataset.val === expOpciones.filas);
-  });
-
-  /* Mostrar/ocultar cols y filas según tipo */
-  const colsSec = document.querySelector('#expm-cols-section');
-  const filasSec = document.querySelector('#expm-filas-section');
-  const esSoloInventario = expOpciones.tipo === 'inventario';
-
-  if(colsSec) colsSec.style.display = esSoloInventario ? 'none' : 'block';
-  if(filasSec) filasSec.style.display = esSoloInventario ? 'none' : 'block';
 
   /* Separar categorías */
   const sepCat = document.querySelector('#expm-sep-cat');
