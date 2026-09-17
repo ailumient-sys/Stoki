@@ -672,7 +672,7 @@ async function exportarConOpciones(tipo){
     return;
   }
 
-  const opciones = window.expOpciones || {};
+  const opciones = (typeof expOpciones !== 'undefined') ? expOpciones : (window.expOpciones || {});
 
   if(tipo === 'inventario'){
     await generarInventarioPDF(opciones);

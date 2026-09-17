@@ -2,7 +2,7 @@
    views/export-pdf-modal.js — Modal unificado de exportación
    ========================================================= */
 
-let expOpciones = {
+window.expOpciones = {
   tipo: 'catalogo',        /* 'inventario' | 'catalogo' | 'ambos' */
   columnas: 2,
   filas: 3,
