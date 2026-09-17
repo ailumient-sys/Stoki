@@ -2,6 +2,7 @@
    views/inventory-pdf.js — Exportar a PDF
    - Inventario: tabla técnica (landscape)
    - Catálogo: cuadrícula con imágenes (portrait) para clientes
+   v12: guarda en Documents/Stoki/Inventario y /Catalogos
    ========================================================= */
 
 const PDF_VERDE      = [34, 197, 94];
@@ -14,7 +15,7 @@ const PDF_BLANCO     = [255, 255, 255];
 /* =========================================================
    EXPORTAR INVENTARIO (tabla técnica)
    ========================================================= */
-function exportarInventarioPDF(){
+async function exportarInventarioPDF(){
   if(typeof window.jspdf === 'undefined'){
     toast('⚠️ Generador PDF no cargado. Revisá tu internet.');
     return;
@@ -106,10 +107,20 @@ function exportarInventarioPDF(){
 
   dibujarFooterPDF(doc, { W, H, M, valorTotalStock, unidadesTotales });
 
-  const nombreArchivo = `Stoki-Inventario-${todayISO()}.pdf`;
-  doc.save(nombreArchivo);
+  const nombreArchivo = `Inventario-${todayISO()}.pdf`;
 
-  toast('📄 PDF generado');
+  if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
+    const pdfBase64 = doc.output('datauristring');
+    const r = await guardarArchivo(pdfBase64, nombreArchivo, 'Inventario');
+    if(r.ok){
+      toast('📁 Guardado en Documents/Stoki/Inventario/');
+    } else {
+      toast('⚠️ No se pudo guardar el PDF');
+    }
+  } else {
+    doc.save(nombreArchivo);
+    toast('📄 PDF descargado');
+  }
 }
 
 /* =========================================================
@@ -156,7 +167,6 @@ async function exportarCatalogoPDF(){
       day: '2-digit', month: '2-digit', year: 'numeric'
     });
 
-    /* Grid: 2 columnas x 3 filas = 6 por página */
     const cols = 2;
     const porPagina = 6;
     const gapX = 10;
@@ -169,7 +179,6 @@ async function exportarCatalogoPDF(){
       a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
     );
 
-    /* Procesar todas las fotos en paralelo (más rápido) */
     const imagenes = await Promise.all(
       lista.map(async p => {
         const foto = getFotoPrincipal(p);
@@ -187,12 +196,10 @@ async function exportarCatalogoPDF(){
     for(let pagina = 0; pagina < totalPaginas; pagina++){
       if(pagina > 0) doc.addPage();
 
-      /* Fondo blanco + marca de agua */
       doc.setFillColor(...PDF_BLANCO);
       doc.rect(0, 0, W, H, 'F');
       dibujarMarcaDeAguaPDF(doc, W, H);
 
-      /* Header */
       if(pagina === 0){
         dibujarHeaderCatalogoPDF(doc, { W, M, nombreNegocio, fecha, total: lista.length });
       } else {
@@ -220,14 +227,25 @@ async function exportarCatalogoPDF(){
       }
     }
 
-    const nombreArchivo = `Stoki-Catalogo-${todayISO()}.pdf`;
-    doc.save(nombreArchivo);
+    const nombreArchivo = `Catalogo-${todayISO()}.pdf`;
+
+    if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
+      const pdfBase64 = doc.output('datauristring');
+      const r = await guardarArchivo(pdfBase64, nombreArchivo, 'Catalogos');
+      if(r.ok){
+        toast('📁 Guardado en Documents/Stoki/Catalogos/');
+      } else {
+        toast('⚠️ No se pudo guardar el catálogo');
+      }
+    } else {
+      doc.save(nombreArchivo);
+      toast('🖼️ Catálogo descargado');
+    }
 
     const loadEl = document.querySelector('#m-catalog-loading');
     if(loadEl) loadEl.remove();
 
     if(navigator.vibrate) navigator.vibrate(20);
-    toast('🖼️ Catálogo generado');
 
   }catch(e){
     console.error('Error generando catálogo:', e);
@@ -243,16 +261,13 @@ async function exportarCatalogoPDF(){
 function dibujarCardCatalogoPDF(doc, x, y, w, h, imgH, producto, imgData){
   const c = calc(producto);
 
-  /* Fondo de la card (redondeado) */
   doc.setFillColor(...PDF_GRIS_CLARO);
   doc.roundedRect(x, y, w, h, 3, 3, 'F');
 
-  /* Borde sutil */
   doc.setDrawColor(225, 228, 232);
   doc.setLineWidth(0.2);
   doc.roundedRect(x, y, w, h, 3, 3, 'S');
 
-  /* Imagen con padding interno */
   const pad = 2;
   const imgW = w - pad * 2;
   const imgHReal = imgH - pad;
@@ -267,7 +282,6 @@ function dibujarCardCatalogoPDF(doc, x, y, w, h, imgH, producto, imgData){
     dibujarPlaceholderFoto(doc, x + pad, y + pad, imgW, imgHReal, producto);
   }
 
-  /* Nombre */
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(...PDF_NEGRO);
@@ -278,7 +292,6 @@ function dibujarCardCatalogoPDF(doc, x, y, w, h, imgH, producto, imgData){
 
   doc.text(nombreMax, x + w / 2, y + imgH + 8, { align: 'center' });
 
-  /* Precio */
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
   doc.setTextColor(...PDF_VERDE);
@@ -298,7 +311,7 @@ function dibujarPlaceholderFoto(doc, x, y, w, h, producto){
 }
 
 /* =========================================================
-   PREPARAR IMAGEN (cover crop a la caja destino)
+   PREPARAR IMAGEN
    ========================================================= */
 function prepararImagenCatalogo(base64, targetW, targetH){
   return new Promise(resolve => {
@@ -311,14 +324,12 @@ function prepararImagenCatalogo(base64, targetW, targetH){
         canvas.height = targetH;
         const ctx = canvas.getContext('2d');
 
-        /* Cover: llena todo el cuadro sin deformar */
         const scale = Math.max(targetW / img.width, targetH / img.height);
         const dw = img.width  * scale;
         const dh = img.height * scale;
         const dx = (targetW - dw) / 2;
         const dy = (targetH - dh) / 2;
 
-        /* Fondo blanco por si hay transparencia */
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, targetW, targetH);
 
@@ -339,8 +350,6 @@ function prepararImagenCatalogo(base64, targetW, targetH){
 /* =========================================================
    HEADERS Y FOOTERS
    ========================================================= */
-
-/* --- Inventario (landscape) --- */
 function dibujarHeaderPDF(doc, { W, M, nombreNegocio, fecha, valorTotalStock, unidadesTotales, cantidad }){
   doc.setFillColor(...PDF_BLANCO);
   doc.rect(0, 0, W, doc.internal.pageSize.getHeight(), 'F');
@@ -467,7 +476,6 @@ function dibujarFooterPDF(doc, { W, H, M, valorTotalStock, unidadesTotales }){
   doc.text('Generado con Stoki', W - M, y + 7, { align: 'right' });
 }
 
-/* --- Catálogo (portrait) --- */
 function dibujarHeaderCatalogoPDF(doc, { W, M, nombreNegocio, fecha, total }){
   doc.setFillColor(...PDF_VERDE);
   doc.rect(0, 0, W, 22, 'F');
@@ -504,9 +512,6 @@ function dibujarHeaderCompactoCatalogoPDF(doc, { W, M, nombreNegocio, fecha }){
   doc.text(`${nombreNegocio} · ${fecha}`, W - M, 9.5, { align: 'right' });
 }
 
-/* =========================================================
-   MARCA DE AGUA (funciona en landscape y portrait)
-   ========================================================= */
 function dibujarMarcaDeAguaPDF(doc, W, H){
   doc.setGState(new doc.GState({ opacity: 0.10 }));
   doc.setTextColor(...PDF_VERDE);
@@ -529,4 +534,4 @@ function dibujarMarcaDeAguaPDF(doc, W, H){
   }
 
   doc.setGState(new doc.GState({ opacity: 1 }));
-}
+    }
