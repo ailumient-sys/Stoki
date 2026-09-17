@@ -1,6 +1,6 @@
 /* =========================================================
    core/storage.js — persistencia
-   v11: fotos en IndexedDB + migración automática
+   v11: fotos + comprobantes en IndexedDB
    ========================================================= */
 
 const STORAGE_KEY = 'stocki_v1';
@@ -8,8 +8,9 @@ const SESSION_KEY = 'stoki_sesion_compra';
 const CARRITO_KEY = 'stoki_carrito';
 const STORAGE_VERSION = 11;
 
-const FOTOS_DB    = 'stoki-fotos';
-const FOTOS_STORE = 'fotos';
+const FOTOS_DB       = 'stoki-fotos';
+const FOTOS_STORE    = 'fotos';
+const COMPROB_STORE  = 'comprobantes';
 
 let _fotosDB = null;
 
@@ -29,23 +30,27 @@ window.DB = {
   ventaCounter: {}
 };
 
-window.SESSION = null;
-window.CARRITO = { items: [] };
-window.FOTOS   = {};
+window.SESSION      = null;
+window.CARRITO      = { items: [] };
+window.FOTOS        = {};
+window.COMPROBANTES = {};
 
 /* =========================================================
-   INDEXEDDB — FOTOS
+   INDEXEDDB — FOTOS + COMPROBANTES
    ========================================================= */
 function abrirFotosDB(){
   return new Promise((resolve, reject) => {
     if(_fotosDB) return resolve(_fotosDB);
 
-    const req = indexedDB.open(FOTOS_DB, 1);
+    const req = indexedDB.open(FOTOS_DB, 2);
 
     req.onupgradeneeded = e => {
       const db = e.target.result;
       if(!db.objectStoreNames.contains(FOTOS_STORE)){
         db.createObjectStore(FOTOS_STORE);
+      }
+      if(!db.objectStoreNames.contains(COMPROB_STORE)){
+        db.createObjectStore(COMPROB_STORE);
       }
     };
 
@@ -106,17 +111,78 @@ async function cargarTodasLasFotos(){
   });
 }
 
+/* =========================================================
+   COMPROBANTES DE PAGO (IndexedDB)
+   ========================================================= */
+async function guardarComprobanteDB(pedidoId, comprobante){
+  const db = await abrirFotosDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(COMPROB_STORE, 'readwrite');
+    const store = tx.objectStore(COMPROB_STORE);
+
+    if(!comprobante || !comprobante.imagen){
+      store.delete(pedidoId);
+    } else {
+      store.put(comprobante, pedidoId);
+    }
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function eliminarComprobanteDB(pedidoId){
+  const db = await abrirFotosDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(COMPROB_STORE, 'readwrite');
+    tx.objectStore(COMPROB_STORE).delete(pedidoId);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
+
+async function cargarTodosLosComprobantes(){
+  const db = await abrirFotosDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(COMPROB_STORE, 'readonly');
+    const store = tx.objectStore(COMPROB_STORE);
+    const req = store.openCursor();
+    const out = {};
+
+    req.onsuccess = e => {
+      const cursor = e.target.result;
+      if(cursor){
+        out[cursor.key] = cursor.value;
+        cursor.continue();
+      } else {
+        resolve(out);
+      }
+    };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
 async function precargarFotos(){
+  /* Fotos */
   try{
     const guardadas = await cargarTodasLasFotos();
     window.FOTOS = guardadas || {};
   }catch(e){
-    console.warn('⚠️ IndexedDB no disponible:', e);
+    console.warn('⚠️ IndexedDB fotos no disponible:', e);
     window.FOTOS = {};
   }
 
-  const migrar = [];
+  /* Comprobantes */
+  try{
+    const comps = await cargarTodosLosComprobantes();
+    window.COMPROBANTES = comps || {};
+  }catch(e){
+    console.warn('⚠️ IndexedDB comprobantes no disponible:', e);
+    window.COMPROBANTES = {};
+  }
 
+  /* ---- Migrar fotos desde localStorage ---- */
+  const migrar = [];
   (window.DB.products || []).forEach(p => {
     if(Array.isArray(p.fotos) && p.fotos.length &&
        typeof p.fotos[0] === 'string' &&
@@ -131,7 +197,7 @@ async function precargarFotos(){
       try{
         await guardarFotosProducto(p.id, window.FOTOS[p.id]);
       }catch(e){
-        console.warn('Migración falló para', p.id, e);
+        console.warn('Migración foto falló para', p.id, e);
         continue;
       }
       p.cantidadFotos = window.FOTOS[p.id].length;
@@ -139,6 +205,32 @@ async function precargarFotos(){
     }
     saveDB();
     console.log(`✅ Migradas ${migrar.length} fotos a IndexedDB`);
+  }
+
+  /* ---- Migrar comprobantes desde localStorage ---- */
+  const migrarComps = [];
+  (window.DB.orders || []).forEach(o => {
+    if(o.comprobante &&
+       o.comprobante.imagen &&
+       typeof o.comprobante.imagen === 'string' &&
+       o.comprobante.imagen.startsWith('data:')){
+      window.COMPROBANTES[o.id] = { ...o.comprobante };
+      migrarComps.push(o);
+    }
+  });
+
+  if(migrarComps.length){
+    for(const o of migrarComps){
+      try{
+        await guardarComprobanteDB(o.id, window.COMPROBANTES[o.id]);
+      }catch(e){
+        console.warn('Migración comprobante falló para', o.id, e);
+        continue;
+      }
+      o.comprobante = { tipo: o.comprobante.tipo };
+    }
+    saveDB();
+    console.log(`✅ Migrados ${migrarComps.length} comprobantes a IndexedDB`);
   }
 }
 
@@ -234,7 +326,7 @@ function migrateToLotes(){
       ventas: ventas
     };
   });
-}
+  }
 function migrateToMultiFotos(){
   window.DB.products = window.DB.products.map(p => {
     if(typeof p.foto === 'string' && p.foto){
@@ -346,15 +438,6 @@ function generarNumeroTicket(fechaISO){
   const num = String(window.DB.ventaCounter[dia]).padStart(3, '0');
   return `${diaCompacto}-${num}`;
 }
-
-function generarNumeroPedido(fechaISO){
-  const dia = (fechaISO || todayISO()).slice(0, 10);
-  const diaCompacto = dia.replace(/-/g, '');
-  const key = 'pedido_' + dia;
-  window.DB.ventaCounter[key] = (window.DB.ventaCounter[key] || 0) + 1;
-  const num = String(window.DB.ventaCounter[key]).padStart(3, '0');
-  return `${diaCompacto}-P${num}`;
-       }
 function saveDB(){
   try{
     window.DB.version = STORAGE_VERSION;
@@ -476,3 +559,12 @@ function importBackup(file){
 
   reader.readAsText(file);
 }
+
+function generarNumeroPedido(fechaISO){
+  const dia = (fechaISO || todayISO()).slice(0, 10);
+  const diaCompacto = dia.replace(/-/g, '');
+  const key = 'pedido_' + dia;
+  window.DB.ventaCounter[key] = (window.DB.ventaCounter[key] || 0) + 1;
+  const num = String(window.DB.ventaCounter[key]).padStart(3, '0');
+  return `${diaCompacto}-P${num}`;
+       }
