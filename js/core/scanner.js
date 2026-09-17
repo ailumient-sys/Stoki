@@ -1,18 +1,53 @@
-
 /* =========================================================
    core/scanner.js — escáner de códigos de barras
-   Usa html5-qrcode (funciona en Chrome Y APK).
+   v12: solicita permiso de cámara explícitamente
    ========================================================= */
 
 let scannerInstance = null;
 let scannerCallback = null;
 
 /* Abrir el modal de escaneo con un callback */
-function openScanner(callback){
+async function openScanner(callback){
   scannerCallback = callback || null;
+
+  /* Pedir permiso de cámara antes de abrir el modal */
+  const tienePermiso = await solicitarPermisoCamara();
+  if(!tienePermiso){
+    toast('⚠️ Necesitás dar permiso a la cámara');
+    return;
+  }
+
   openModal('#m-scan');
-  /* Pequeño delay para que el modal esté visible */
   setTimeout(() => startScanner(), 250);
+}
+
+/* Solicitar permiso de cámara (funciona en Chrome y APK) */
+async function solicitarPermisoCamara(){
+  try{
+    /* Intentar con la API del navegador */
+    if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia){
+      try{
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' }
+        });
+        /* Detener inmediatamente, solo queríamos el permiso */
+        stream.getTracks().forEach(t => t.stop());
+        return true;
+      }catch(e){
+        if(e.name === 'NotAllowedError'){
+          toast('📷 Permití la cámara en los ajustes de la app');
+          return false;
+        }
+        /* Otros errores: seguir igual (puede ser que el permiso ya esté dado) */
+        return true;
+      }
+    }
+
+    return true;
+  }catch(e){
+    console.warn('Error al pedir permiso de cámara:', e);
+    return true;
+  }
 }
 
 /* Iniciar la cámara */
@@ -20,14 +55,12 @@ async function startScanner(){
   const cont = $('#scanner-reader');
   if(!cont) return;
 
-  /* Verificar librería */
   if(typeof Html5Qrcode === 'undefined'){
     toast('⚠️ Escáner no disponible');
     closeScanner();
     return;
   }
 
-  /* Si ya había una instancia, limpiarla */
   if(scannerInstance){
     try{ await scannerInstance.stop(); }catch(e){}
     try{ scannerInstance.clear(); }catch(e){}
@@ -45,11 +78,16 @@ async function startScanner(){
         aspectRatio: 1.0
       },
       onScanSuccess,
-      () => {} /* ignorar errores de frame */
+      () => {}
     );
   }catch(e){
     console.error('Error al iniciar cámara:', e);
-    toast('⚠️ No se pudo abrir la cámara');
+
+    if(e.name === 'NotAllowedError' || (e.message && e.message.includes('Permission'))){
+      toast('⚠️ Permití la cámara en los ajustes del sistema');
+    } else {
+      toast('⚠️ No se pudo abrir la cámara');
+    }
     closeScanner();
   }
 }
@@ -85,7 +123,6 @@ function initScanner(){
     closeBtn.addEventListener('click', closeScanner);
   }
 
-  /* También cerrar al tocar fuera */
   const modal = $('#m-scan');
   if(modal){
     modal.addEventListener('click', e => {
