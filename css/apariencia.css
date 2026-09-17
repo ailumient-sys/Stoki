@@ -137,3 +137,99 @@ body.tema-custom .view {
   background: rgba(239, 68, 68, .14);
   color: var(--red);
 }
+
+/* =========================================================
+   TRANSPARENCIA DE ELEMENTOS CUANDO EL TEMA ESTÁ ACTIVO
+   (hace visible la imagen de fondo con efecto vidrio)
+   ========================================================= */
+
+/* Sobreescribir los colores base para que sean translúcidos */
+body.tema-custom {
+  --bg2: rgba(22, 26, 34, 0.72);
+  --bg3: rgba(30, 36, 48, 0.58);
+  --bg4: rgba(37, 44, 58, 0.48);
+  --line: rgba(42, 49, 64, 0.35);
+}
+
+/* Efecto "vidrio esmerilado" en los elementos principales */
+body.tema-custom .card,
+body.tema-custom .inv-item,
+body.tema-custom .order-card,
+body.tema-custom .kbox,
+body.tema-custom .kpis,
+body.tema-custom .bill-row,
+body.tema-custom .sales-summary,
+body.tema-custom .chart-box,
+body.tema-custom .invest-stat,
+body.tema-custom .invest-card,
+body.tema-custom .sup-row,
+body.tema-custom .cli-row,
+body.tema-custom .cat-section,
+body.tema-custom .sim-card,
+body.tema-custom .hist-section,
+body.tema-custom .inv-toolbar,
+body.tema-custom .day-group,
+body.tema-custom .period button,
+body.tema-custom .inv-chip,
+body.tema-custom .nav-btn {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Bottom nav y header también */
+body.tema-custom .bottom-nav {
+  background: rgba(22, 26, 34, 0.80) !important;
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
+header.tema-custom {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Inputs un poco más opacos para que sean legibles */
+body.tema-custom input,
+body.tema-custom select,
+body.tema-custom textarea,
+body.tema-custom .inv-search input,
+body.tema-custom .cli-picker-search {
+  background: rgba(30, 36, 48, 0.88) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Modales semi-transparentes pero legibles */
+body.tema-custom .sheet {
+  background: rgba(22, 26, 34, 0.94) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Overlay oscuro sobre el fondo para mejorar contraste del texto */
+body.tema-custom::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 17, 21, 0.35);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Asegurar que el contenido quede por encima */
+body.tema-custom header,
+body.tema-custom .views,
+body.tema-custom .bottom-nav,
+body.tema-custom .fab,
+body.tema-custom .cart-fab {
+  position: relative;
+  z-index: 1;
+}
+
+body.tema-custom .bottom-nav {
+  z-index: 80;
+}
+body.tema-custom .fab,
+body.tema-custom .cart-fab {
+  z-index: 60;
+}
