@@ -1,7 +1,7 @@
 /* =========================================================
    views/orders-export.js — Tanda C
    Compartir factura del pedido como PNG
-   Reutiliza sharePNG y downloadPNG de ticket.js
+   v12: usa exporter.js para guardar en Documents/Stoki/Pedidos/
    ========================================================= */
 
 async function compartirFacturaPedidoPNG(pedidoId){
@@ -15,7 +15,6 @@ async function compartirFacturaPedidoPNG(pedidoId){
 
   if(document.querySelector('#m-ped-export')) return;
 
-  /* Modal de carga */
   const loadingHTML = `
     <div class="overlay centered open" id="m-ped-export">
       <div class="sheet" style="position:relative;text-align:center;max-width:380px">
@@ -33,7 +32,6 @@ async function compartirFacturaPedidoPNG(pedidoId){
     const loadEl = document.querySelector('#m-ped-export');
     if(loadEl) loadEl.remove();
 
-    /* Modal de preview */
     const exportHTML = `
       <div class="overlay centered open" id="m-ped-export">
         <div class="sheet" style="position:relative">
@@ -57,8 +55,34 @@ async function compartirFacturaPedidoPNG(pedidoId){
     document.body.insertAdjacentHTML('beforeend', exportHTML);
 
     document.querySelector('#pedexp-close').addEventListener('click', closePedidoExport);
-    document.querySelector('#pedexp-wa').addEventListener('click', () => sharePNG(dataURL, o.numero));
-    document.querySelector('#pedexp-dl').addEventListener('click', () => downloadPNG(dataURL, o.numero));
+
+    document.querySelector('#pedexp-wa').addEventListener('click', async () => {
+      const r = await compartirArchivo(
+        dataURL,
+        `Pedido-${o.numero}.png`,
+        'Pedidos',
+        `Pedido ${o.numero}`
+      );
+      if(r.ok){
+        if(r.compartido) toast('✅ Abriendo opciones para compartir...');
+        else toast('📁 Guardada en Documents/Stoki/Pedidos/');
+      } else if(!r.cancelado){
+        toast('⚠️ No se pudo compartir');
+      }
+    });
+
+    document.querySelector('#pedexp-dl').addEventListener('click', async () => {
+      const r = await guardarArchivo(dataURL, `Pedido-${o.numero}.png`, 'Pedidos');
+      if(r.ok){
+        if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
+          toast('📁 Guardada en Documents/Stoki/Pedidos/');
+        } else {
+          toast('⬇️ Factura descargada');
+        }
+      } else {
+        toast('⚠️ No se pudo guardar');
+      }
+    });
 
     document.querySelector('#m-ped-export').addEventListener('click', e => {
       if(e.target.id === 'm-ped-export') closePedidoExport();
@@ -77,9 +101,6 @@ function closePedidoExport(){
   if(el) el.remove();
 }
 
-/* =========================================================
-   GENERADOR DEL CANVAS
-   ========================================================= */
 async function buildPedidoCanvas(o){
   const negocio = window.DB.settings.business || {};
   const cliente = (window.DB.clients || []).find(c => c.id === o.clienteId);
@@ -88,7 +109,6 @@ async function buildPedidoCanvas(o){
   const fecha = fmtDateTime(o.fecha);
   const items = o.items || [];
 
-  /* Filas de items */
   const itemsHTML = items.map(item => {
     const subtotal = item.cantidad * item.precioUnitario;
     return `
@@ -113,7 +133,6 @@ async function buildPedidoCanvas(o){
       </tr>`;
   }).join('');
 
-  /* Bloque del negocio */
   const negocioHTML = negocio.nombre
     ? `
       <div style="font-size:20px;font-weight:900;color:#0f1115;
@@ -127,7 +146,6 @@ async function buildPedidoCanvas(o){
     : `<div style="font-size:20px;font-weight:900;color:#22c55e;
                    letter-spacing:-.5px">Stoki</div>`;
 
-  /* Bloque del cliente */
   const clienteHTML = `
     <div style="background:#f5f5f5;border-radius:8px;padding:12px 14px;
                 margin-bottom:14px;font-size:13px;color:#1a1a1a">
@@ -137,7 +155,6 @@ async function buildPedidoCanvas(o){
                       </div>` : ''}
     </div>`;
 
-  /* Los 3 checks como badges */
   const checkBadge = (label, done, icon) => `
     <td style="padding:10px;text-align:center;border-radius:8px;
                background:${done ? '#dcfce7' : '#f5f5f5'};
@@ -157,20 +174,16 @@ async function buildPedidoCanvas(o){
       </tr>
     </table>`;
 
-  /* Estado del pedido */
   const estadoLabel = o.estado === 'cerrado' ? '✅ Pedido cerrado'
                     : o.estado === 'cancelado' ? '🚫 Pedido cancelado'
                     : '🔴 Pedido activo';
 
-  /* Ref de tasa */
   const refTotal = fmtRefOnly(o.total, o.tasaSnapshot);
 
-  /* HTML para el render */
   const renderHTML = `
     <div style="width:600px;padding:32px 28px;background:#ffffff;
                 font-family:Roboto,Arial,sans-serif;color:#1a1a1a">
 
-      <!-- Header -->
       <div style="display:flex;justify-content:space-between;
                   align-items:flex-start;padding-bottom:16px;
                   border-bottom:2px solid #22c55e;margin-bottom:20px">
@@ -188,7 +201,6 @@ async function buildPedidoCanvas(o){
 
       ${clienteHTML}
 
-      <!-- Items -->
       <table style="width:100%;border-collapse:collapse;margin-bottom:18px">
         <thead>
           <tr>
@@ -217,7 +229,6 @@ async function buildPedidoCanvas(o){
         <tbody>${itemsHTML}</tbody>
       </table>
 
-      <!-- Total -->
       <div style="background:#f8f9fa;border-radius:10px;
                   padding:16px 18px;margin-bottom:20px">
         <div style="display:flex;justify-content:space-between;
@@ -236,7 +247,6 @@ async function buildPedidoCanvas(o){
         ` : ''}
       </div>
 
-      <!-- Estado + Checks -->
       <div style="font-size:10px;color:#999;text-transform:uppercase;
                   letter-spacing:1px;font-weight:800;margin-bottom:8px">
         Estado del pedido
@@ -249,14 +259,12 @@ async function buildPedidoCanvas(o){
         ${estadoLabel}
       </div>
 
-      <!-- Footer -->
       <div style="text-align:center;font-size:11px;color:#999;
                   padding-top:14px;border-top:1px solid #eee">
         ¡Gracias por su compra! 🎉
       </div>
     </div>`;
 
-  /* Render temporal fuera de pantalla */
   const holder = document.createElement('div');
   holder.style.position = 'fixed';
   holder.style.left = '-9999px';
@@ -274,4 +282,3 @@ async function buildPedidoCanvas(o){
   holder.remove();
   return canvas;
 }
-
