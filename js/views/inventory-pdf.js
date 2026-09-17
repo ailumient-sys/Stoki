@@ -141,8 +141,7 @@ function previsualizarPDF(doc, nombreArchivo, tipo){
       toast('📄 PDF descargado');
     }
   });
-}
-/* =========================================================
+}/* =========================================================
    EXPORTAR INVENTARIO
    ========================================================= */
 async function exportarInventarioPDF(){
