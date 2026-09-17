@@ -2,7 +2,7 @@
    views/inventory-pdf.js — Exportar a PDF
    - Inventario: tabla técnica (landscape)
    - Catálogo: cuadrícula con imágenes (portrait) para clientes
-   v12: guarda en Documents/Stoki/Inventario y /Catalogos
+   v13: el toast de éxito lo maneja exporter.js
    ========================================================= */
 
 const PDF_VERDE      = [34, 197, 94];
@@ -109,12 +109,11 @@ async function exportarInventarioPDF(){
 
   const nombreArchivo = `Inventario-${todayISO()}.pdf`;
 
+  /* Guardar (exporter.js maneja el toast) */
   if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
     const pdfBase64 = doc.output('datauristring');
     const r = await guardarArchivo(pdfBase64, nombreArchivo, 'Inventario');
-    if(r.ok){
-      toast('📁 Guardado en Documents/Stoki/Inventario/');
-    } else {
+    if(!r.ok){
       toast('⚠️ No se pudo guardar el PDF');
     }
   } else {
@@ -229,12 +228,11 @@ async function exportarCatalogoPDF(){
 
     const nombreArchivo = `Catalogo-${todayISO()}.pdf`;
 
+    /* Guardar (exporter.js maneja el toast) */
     if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
       const pdfBase64 = doc.output('datauristring');
-      const r = await guardarArchivo(pdfBase64, nombreArchivo, 'Catalogos');
-      if(r.ok){
-        toast('📁 Guardado en Documents/Stoki/Catalogos/');
-      } else {
+      const r = await guardarArchivo(pdfBase64, nombreArchivo, 'Catalogo');
+      if(!r.ok){
         toast('⚠️ No se pudo guardar el catálogo');
       }
     } else {
@@ -534,4 +532,4 @@ function dibujarMarcaDeAguaPDF(doc, W, H){
   }
 
   doc.setGState(new doc.GState({ opacity: 1 }));
-    }
+}
