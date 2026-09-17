@@ -11,8 +11,17 @@ function renderProductos(){
   const cont = $('#v-prod');
   if(!cont) return;
 
-  const todos = window.DB.products || [];
-  const conStock = todos.filter(p => calc(p).stock > 0);
+  let todos, conStock;
+  try {
+    todos = Array.isArray(window.DB.products) ? window.DB.products : [];
+    conStock = todos.filter(p => {
+      try { return calc(p).stock > 0; }
+      catch(e) { console.warn('[Vender] calc falló:', p && p.nombre, e); return false; }
+    });
+  } catch(e){
+    cont.innerHTML = '<div class="empty"><div class="ico">⚠️</div><h3>Error al cargar productos</h3><p style="font-size:11px;word-break:break-all;padding:0 20px">' + esc(e && e.message ? e.message : String(e)) + '</p><p style="font-size:11px;margin-top:8px;color:var(--dim)">Productos en DB: ' + (window.DB.products || []).length + '</p></div>';
+    return;
+  }
 
   if(!todos.length){
     cont.innerHTML = `

@@ -125,8 +125,8 @@ function calc(p){
    FIFO — Distribuir ventas entre lotes
    ========================================================= */
 function getLotesConEstado(p){
-  const lotesOriginales = p.lotes || [];
-  const ventas = p.ventas || [];
+  const lotesOriginales = Array.isArray(p.lotes) ? p.lotes : [];
+  const ventas = Array.isArray(p.ventas) ? p.ventas : [];
 
   const lotes = lotesOriginales.map(l => ({
     ...l,

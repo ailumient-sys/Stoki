@@ -11,6 +11,7 @@ const MORE_ITEMS = [
   { action: 'categorias', icon: '🏷️', titulo: 'Categorías',    sub: 'Organizá tus productos' },
   { action: 'ayuda',      icon: '❓', titulo: 'Ayuda',         sub: 'Guía de la app' },
   { action: 'apariencia', icon: '🎨', titulo: 'Apariencia',    sub: 'Cambiá el tema y fondo' },
+  { action: 'backup',     icon: '🔐', titulo: 'Backup',        sub: 'Exportar / importar datos' },
   { tab: 8, icon: '🛒', titulo: 'Compras',        sub: 'Calculadora de compras' },
   { tab: 7, icon: '🏭', titulo: 'Proveedores',   sub: 'Datos y WhatsApp directo' }
 ];
@@ -55,6 +56,8 @@ function openMoreMenu(){
         setTimeout(() => abrirAyuda(), 120);
       } else if(action === 'categorias'){
         setTimeout(() => abrirGestionCategorias(), 120);
+      } else if(action === 'backup'){
+        setTimeout(() => abrirPanelBackup(), 120);
       } else if(tab !== undefined && tab !== ''){
         setTimeout(() => setTab(+tab), 120);
       }

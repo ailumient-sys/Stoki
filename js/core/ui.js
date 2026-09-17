@@ -134,3 +134,23 @@ function getFotoPrincipal(p){
   const idx = typeof p.fotoPrincipal === 'number' ? p.fotoPrincipal : 0;
   return fotos[idx] || fotos[0] || null;
 }
+
+/* Miniatura cuadrada para listas (carrito, pedidos, ventas, proveedores) */
+function buildThumb(p, size){
+  const s = size || 48;
+  const foto = getFotoPrincipal(p);
+
+  if(foto){
+    return `<div style="width:${s}px;height:${s}px;border-radius:10px;` +
+           `background-image:url('${foto}');background-size:cover;` +
+           `background-position:center;flex:0 0 auto"></div>`;
+  }
+
+  const inicial = esc((p && p.nombre ? p.nombre : '?').charAt(0).toUpperCase());
+  const fs = Math.round(s * 0.4);
+
+  return `<div style="width:${s}px;height:${s}px;border-radius:10px;` +
+         `background:var(--bg3);display:flex;align-items:center;` +
+         `justify-content:center;font-size:${fs}px;font-weight:900;` +
+         `color:var(--dim);flex:0 0 auto">${inicial}</div>`;
+}

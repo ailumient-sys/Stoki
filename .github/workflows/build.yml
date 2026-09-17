@@ -106,18 +106,25 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: "34.0.0"
 
+      - name: Renombrar APK firmado
+        run: |
+          mkdir -p release-final
+          cp "${{ steps.sign_app.outputs.signedReleaseFile }}" \
+             "release-final/Stoki-build-${{ github.run_number }}.apk"
+          ls -lh release-final/
+
       - name: Subir APK como artifact
         uses: actions/upload-artifact@v4
         with:
           name: stoki-apk
-          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          path: release-final/Stoki-build-${{ github.run_number }}.apk
 
       - name: Publicar como Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}-${{ github.run_attempt }}-${{ github.run_attempt }}
-          name: Stoki build #${{ github.run_number }} (${{ github.run_attempt }}) (${{ github.run_attempt }})
+          tag_name: build-${{ github.run_number }}-${{ github.run_attempt }}
+          name: Stoki build #${{ github.run_number }} (intento ${{ github.run_attempt }})
           body: |
             Build automático generado desde el commit ${{ github.sha }}
-          files: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          files: release-final/Stoki-build-${{ github.run_number }}.apk
           token: ${{ secrets.GITHUB_TOKEN }}
