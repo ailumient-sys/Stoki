@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -81,8 +84,19 @@ jobs:
         env:
           BUILD_TOOLS_VERSION: "34.0.0"
 
-      - name: Subir APK firmado
+      - name: Subir APK como artifact
         uses: actions/upload-artifact@v4
         with:
           name: stoki-apk
           path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+
+      - name: Publicar como Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Stoki build #${{ github.run_number }}
+          body: |
+            Build automático generado desde el commit ${{ github.sha }}
+            Fecha: ${{ github.event.head_commit.timestamp }}
+          files: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          token: ${{ secrets.GITHUB_TOKEN }}
