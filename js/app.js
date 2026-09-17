@@ -559,3 +559,13 @@ if(document.readyState === 'loading'){
 } else {
   init();
 }
+
+/* =========================================================
+   Zoom en previews de facturas (delegation)
+   ========================================================= */
+document.addEventListener('click', e => {
+  const img = e.target.closest('.export-preview img');
+  if(img){
+    img.classList.toggle('zoom');
+  }
+});

@@ -1,0 +1,35 @@
+/* =========================================================
+   exporter.css — Preview de facturas/catálogos
+   ========================================================= */
+
+.export-preview {
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 10px;
+  margin: 12px 0;
+  max-height: 55vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  -webkit-overflow-scrolling: touch;
+}
+
+.export-preview img {
+  max-width: 100%;
+  max-height: 50vh;
+  width: auto;
+  height: auto;
+  border-radius: 8px;
+  display: block;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+
+/* Zoom al tocar */
+.export-preview img.zoom {
+  max-height: none;
+  max-width: none;
+  cursor: zoom-out;
+}
