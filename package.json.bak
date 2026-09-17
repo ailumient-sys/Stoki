@@ -1,7 +1,7 @@
 {
   "name": "stoki",
   "version": "1.0.0",
-  "description": "Stoki \u2014 Gesti\u00f3n de inventario, ventas y pedidos",
+  "description": "Stoki — Gestión de inventario, ventas y pedidos",
   "private": true,
   "scripts": {
     "sync": "cap sync android"
@@ -12,7 +12,8 @@
     "@capacitor/filesystem": "^6.0.1",
     "@capacitor/share": "^6.0.2",
     "@capacitor/splash-screen": "^6.0.2",
-    "@capacitor/status-bar": "^6.0.2"
+    "@capacitor/status-bar": "^6.0.2",
+    "capacitor-native-settings": "^6.0.1"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.1.2"

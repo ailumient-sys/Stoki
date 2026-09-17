@@ -524,7 +524,7 @@ async function dibujarHeaderPDF(doc, { W, M, nombreNegocio, fecha, valorTotalSto
   doc.text(`Valor total: ${fmt(valorTotalStock)}`, W - M, y, { align: 'right' });
 }
 
-function dibujarHeaderCompactoPDF(doc, { W, M, nombreNegocio, fecha, categoriaNombre = null }){
+function dibujarHeaderCompactoPDF(doc, { W, M, nombreNegocio, fecha }){
   doc.setFillColor(...PDF_VERDE);
   doc.rect(0, 0, W, 14, 'F');
 

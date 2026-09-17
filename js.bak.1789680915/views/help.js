@@ -289,7 +289,7 @@ const HELP_SECCIONES = [
       },
       {
         titulo: 'Respaldo',
-        texto: 'Tocá el logo "Stoki" 3 veces seguidas para abrir el panel de respaldo (exportar o importar).'
+        texto: 'Tocá el logo "Stoki" 2 veces seguidas para descargar un respaldo JSON con todos tus datos.'
       }
     ]
   }

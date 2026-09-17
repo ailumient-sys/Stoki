@@ -118,13 +118,15 @@ function initTapHandler(){
     if(e.target.closest('.sale-del'))    return;
     if(e.target.closest('.bill-del'))    return;
 
+    const vCard   = null; /* vender-card eliminado */
     const invItem = e.target.closest('.inv-item');
     const billRow = e.target.closest('.bill-row');
 
     let target = null;
     let tipo = null;
 
-    if(invItem){      target = invItem;  tipo = 'inventario'; }
+    if(vCard){        target = vCard;    tipo = 'vender-card'; }
+    else if(invItem){ target = invItem;  tipo = 'inventario'; }
     else if(billRow){ target = billRow;  tipo = 'venta'; }
 
     if(!target) return;
@@ -303,6 +305,7 @@ function initGlobalEvents(){
     };
 
     logo.addEventListener('click', manejarTap);
+    logo.addEventListener('touchend', manejarTap);
   }
 
 
