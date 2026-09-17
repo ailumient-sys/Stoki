@@ -1,18 +1,24 @@
 /* =========================================================
    core/storage.js — persistencia
-   v12: fotos + comprobantes en IndexedDB (limpio)
+   v14: DB completo en IndexedDB + migración automática
    ========================================================= */
 
 const STORAGE_KEY     = 'stocki_v1';
 const SESSION_KEY     = 'stoki_sesion_compra';
 const CARRITO_KEY     = 'stoki_carrito';
-const STORAGE_VERSION = 13;
+const STORAGE_VERSION = 14;
 
 const FOTOS_DB      = 'stoki-fotos';
 const FOTOS_STORE   = 'fotos';
 const COMPROB_STORE = 'comprobantes';
 
+const MAIN_DB    = 'stoki-db';
+const MAIN_STORE = 'kv';
+
 let _fotosDB = null;
+let _mainDB  = null;
+let _guardando = false;
+let _pendienteGuardar = false;
 
 window.DB = {
   version: STORAGE_VERSION,
@@ -35,6 +41,51 @@ window.SESSION      = null;
 window.CARRITO      = { items: [] };
 window.FOTOS        = {};
 window.COMPROBANTES = {};
+
+/* =========================================================
+   INDEXEDDB — DB PRINCIPAL (kv)
+   ========================================================= */
+function abrirMainDB(){
+  return new Promise((resolve, reject) => {
+    if(_mainDB) return resolve(_mainDB);
+
+    const req = indexedDB.open(MAIN_DB, 1);
+
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains(MAIN_STORE)){
+        db.createObjectStore(MAIN_STORE);
+      }
+    };
+
+    req.onsuccess = e => {
+      _mainDB = e.target.result;
+      resolve(_mainDB);
+    };
+
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function idbGet(key){
+  const db = await abrirMainDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MAIN_STORE, 'readonly');
+    const req = tx.objectStore(MAIN_STORE).get(key);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+async function idbSet(key, value){
+  const db = await abrirMainDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(MAIN_STORE, 'readwrite');
+    tx.objectStore(MAIN_STORE).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = e => reject(e.target.error);
+  });
+}
 
 /* =========================================================
    INDEXEDDB — FOTOS + COMPROBANTES
@@ -69,13 +120,11 @@ async function guardarFotosProducto(productoId, fotos){
   return new Promise((resolve, reject) => {
     const tx = db.transaction(FOTOS_STORE, 'readwrite');
     const store = tx.objectStore(FOTOS_STORE);
-
     if(!fotos || !fotos.length){
       store.delete(productoId);
     } else {
       store.put(fotos, productoId);
     }
-
     tx.oncomplete = () => resolve();
     tx.onerror = e => reject(e.target.error);
   });
@@ -98,7 +147,6 @@ async function cargarTodasLasFotos(){
     const store = tx.objectStore(FOTOS_STORE);
     const req = store.openCursor();
     const out = {};
-
     req.onsuccess = e => {
       const cursor = e.target.result;
       if(cursor){
@@ -112,21 +160,16 @@ async function cargarTodasLasFotos(){
   });
 }
 
-/* =========================================================
-   COMPROBANTES DE PAGO
-   ========================================================= */
 async function guardarComprobanteDB(pedidoId, comprobante){
   const db = await abrirFotosDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(COMPROB_STORE, 'readwrite');
     const store = tx.objectStore(COMPROB_STORE);
-
     if(!comprobante || !comprobante.imagen){
       store.delete(pedidoId);
     } else {
       store.put(comprobante, pedidoId);
     }
-
     tx.oncomplete = () => resolve();
     tx.onerror = e => reject(e.target.error);
   });
@@ -149,7 +192,6 @@ async function cargarTodosLosComprobantes(){
     const store = tx.objectStore(COMPROB_STORE);
     const req = store.openCursor();
     const out = {};
-
     req.onsuccess = e => {
       const cursor = e.target.result;
       if(cursor){
@@ -163,6 +205,9 @@ async function cargarTodosLosComprobantes(){
   });
 }
 
+/* =========================================================
+   PRECARGA + MIGRACIÓN
+   ========================================================= */
 async function precargarFotos(){
   try{
     const guardadas = await cargarTodasLasFotos();
@@ -234,51 +279,97 @@ async function precargarFotos(){
 }
 
 /* =========================================================
-   CARGA + MIGRACIÓN
+   CARGA DEL DB COMPLETO
+   1. Intenta IndexedDB
+   2. Si está vacío, migra desde localStorage
+   3. Si no hay nada, arranca limpio
    ========================================================= */
-function loadDB(){
+async function loadDB(){
+  /* --- 1. Intentar IndexedDB --- */
+  let dataIDB = null;
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(!raw) return;
-
-    const parsed = JSON.parse(raw);
-
-    window.DB.products  = parsed.products  || [];
-    window.DB.tickets   = parsed.tickets   || [];
-    window.DB.clients   = parsed.clients   || [];
-    window.DB.suppliers = parsed.suppliers || [];
-    window.DB.orders    = parsed.orders    || [];
-    window.DB.categories = parsed.categories || [];
-    window.DB.settings = Object.assign(
-      { currency: 'USD', refCurrency: 'VES', tasaDia: 0, tasaActualizada: null },
-      parsed.settings || {}
-    );
-    window.DB.ventaCounter = parsed.ventaCounter || {};
-    window.DB.version = parsed.version || 1;
-
-    if(window.DB.version < STORAGE_VERSION){
-      console.log('🔄 Migrando datos...');
-
-      if(window.DB.version < 2)  migrateToLotes();
-      if(window.DB.version < 3)  migrateToMultiFotos();
-      if(window.DB.version < 4)  migrateToTasa();
-      if(window.DB.version < 5)  migrateToNomenclatura();
-      if(window.DB.version < 6)  migrateToTickets();
-      if(window.DB.version < 7)  migrateToClients();
-      if(window.DB.version < 8)  migrateToSuppliers();
-      if(window.DB.version < 9)  migrateToOrders();
-      if(window.DB.version < 10) migrateToSupplierProducts();
-      if(window.DB.version < 11) migrateToFotosIndexedDB();
-      if(window.DB.version < 13) migrateToCategories();
-      migrateCategoriasEmoji();
-
-      window.DB.version = STORAGE_VERSION;
-      saveDB();
-      console.log('✅ Migración completa a v' + STORAGE_VERSION);
-    }
+    dataIDB = await idbGet('db');
   }catch(e){
-    console.error('❌ Error al cargar datos:', e);
+    console.warn('⚠️ IndexedDB no disponible, usando localStorage:', e);
   }
+
+  if(dataIDB && dataIDB.version){
+    /* Copiar datos a window.DB */
+    Object.keys(dataIDB).forEach(k => {
+      window.DB[k] = dataIDB[k];
+    });
+    console.log('✅ DB cargado desde IndexedDB (v' + dataIDB.version + ')');
+
+    /* Correr migraciones pendientes si el DB tiene versión vieja */
+    if(window.DB.version < STORAGE_VERSION){
+      await correrMigraciones();
+    }
+    return;
+  }
+
+  /* --- 2. Migrar desde localStorage --- */
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if(raw){
+    try{
+      const parsed = JSON.parse(raw);
+
+      window.DB.products   = parsed.products   || [];
+      window.DB.tickets    = parsed.tickets    || [];
+      window.DB.clients    = parsed.clients    || [];
+      window.DB.suppliers  = parsed.suppliers  || [];
+      window.DB.orders     = parsed.orders     || [];
+      window.DB.categories = parsed.categories || [];
+      window.DB.settings   = Object.assign(
+        { currency: 'USD', refCurrency: 'VES', tasaDia: 0, tasaActualizada: null },
+        parsed.settings || {}
+      );
+      window.DB.ventaCounter = parsed.ventaCounter || {};
+      window.DB.version = parsed.version || 1;
+
+      console.log('🔄 Migrando de localStorage a IndexedDB...');
+
+      if(window.DB.version < STORAGE_VERSION){
+        await correrMigraciones();
+      } else {
+        await idbSet('db', window.DB);
+      }
+
+      /* NO borrar localStorage todavía (seguridad) */
+      console.log('✅ Migración a IndexedDB completa');
+      return;
+    }catch(e){
+      console.error('❌ Error migrando de localStorage:', e);
+    }
+  }
+
+  /* --- 3. Sin datos: primera vez --- */
+  console.log('ℹ️ Primera vez: DB vacío');
+  await idbSet('db', window.DB);
+}
+
+/* =========================================================
+   MIGRACIONES
+   ========================================================= */
+async function correrMigraciones(){
+  console.log('🔄 Migrando datos de v' + window.DB.version);
+
+  if(window.DB.version < 2)  migrateToLotes();
+  if(window.DB.version < 3)  migrateToMultiFotos();
+  if(window.DB.version < 4)  migrateToTasa();
+  if(window.DB.version < 5)  migrateToNomenclatura();
+  if(window.DB.version < 6)  migrateToTickets();
+  if(window.DB.version < 7)  migrateToClients();
+  if(window.DB.version < 8)  migrateToSuppliers();
+  if(window.DB.version < 9)  migrateToOrders();
+  if(window.DB.version < 10) migrateToSupplierProducts();
+  if(window.DB.version < 11) migrateToFotosIndexedDB();
+  if(window.DB.version < 13) migrateToCategories();
+
+  migrateCategoriasEmoji();
+
+  window.DB.version = STORAGE_VERSION;
+  await idbSet('db', window.DB);
+  console.log('✅ Migración completa a v' + STORAGE_VERSION);
 }
 
 function migrateToFotosIndexedDB(){
@@ -292,13 +383,26 @@ function migrateToFotosIndexedDB(){
   });
 }
 
+function migrateToCategories(){
+  if(!Array.isArray(window.DB.categories)){
+    window.DB.categories = [];
+  }
+}
+
+function migrateCategoriasEmoji(){
+  if(!Array.isArray(window.DB.categories)) return;
+  window.DB.categories = window.DB.categories.map(c => {
+    if(!c.emoji) c.emoji = '🏷️';
+    return c;
+  });
+}
+
 function migrateToLotes(){
   window.DB.products = window.DB.products.map(p => {
     if(Array.isArray(p.lotes) && p.lotes.length > 0){
       if(typeof p.favorito !== 'boolean') p.favorito = false;
       return p;
     }
-
     const uComp  = Number(p.unidadesCompradas) || 0;
     const cTotal = Number(p.costoTotalCompra) || 0;
     const costoU = uComp > 0 ? cTotal / uComp : 0;
@@ -332,6 +436,7 @@ function migrateToLotes(){
     };
   });
 }
+
 function migrateToMultiFotos(){
   window.DB.products = window.DB.products.map(p => {
     if(typeof p.foto === 'string' && p.foto){
@@ -436,6 +541,9 @@ function migrateToSupplierProducts(){
   });
 }
 
+/* =========================================================
+   NOMENCLATURA
+   ========================================================= */
 function generarNumeroTicket(fechaISO){
   const dia = (fechaISO || todayISO()).slice(0, 10);
   const diaCompacto = dia.replace(/-/g, '');
@@ -452,27 +560,40 @@ function generarNumeroPedido(fechaISO){
   const num = String(window.DB.ventaCounter[key]).padStart(3, '0');
   return `${diaCompacto}-P${num}`;
 }
+
+/* =========================================================
+   GUARDAR
+   Async pero NO await (fire and forget con cola)
+   ========================================================= */
 function saveDB(){
-  try{
-    window.DB.version = STORAGE_VERSION;
-    const json = JSON.stringify(window.DB);
+  window.DB.version = STORAGE_VERSION;
 
-    const bytes = new Blob([json]).size;
-    const mb = bytes / 1024 / 1024;
-
-    if(mb > 3.5 && !window._avisoStorage){
-      window._avisoStorage = true;
-      toast('⚠️ Almacenamiento casi lleno.');
-      setTimeout(() => { window._avisoStorage = false; }, 60000);
-    }
-
-    localStorage.setItem(STORAGE_KEY, json);
-  }catch(e){
-    console.error('❌ Error al guardar:', e);
-    toast('⚠️ Almacenamiento lleno.');
+  /* Cola: si está guardando, marcar pendiente */
+  if(_guardando){
+    _pendienteGuardar = true;
+    return;
   }
+
+  _guardando = true;
+
+  idbSet('db', window.DB)
+    .then(() => {
+      _guardando = false;
+      if(_pendienteGuardar){
+        _pendienteGuardar = false;
+        saveDB();
+      }
+    })
+    .catch(e => {
+      console.error('❌ Error guardando en IndexedDB:', e);
+      _guardando = false;
+      toast('⚠️ No se pudo guardar');
+    });
 }
 
+/* =========================================================
+   SESIÓN DE COMPRA
+   ========================================================= */
 function loadSession(){
   try{
     const raw = localStorage.getItem(SESSION_KEY);
@@ -497,6 +618,9 @@ function clearSession(){
   localStorage.removeItem(SESSION_KEY);
 }
 
+/* =========================================================
+   CARRITO
+   ========================================================= */
 function loadCarrito(){
   try{
     const raw = localStorage.getItem(CARRITO_KEY);
@@ -517,6 +641,9 @@ function clearCarrito(){
   localStorage.removeItem(CARRITO_KEY);
 }
 
+/* =========================================================
+   RESPALDO
+   ========================================================= */
 function exportBackup(){
   const data = JSON.stringify(window.DB, null, 2);
   const blob = new Blob([data], { type: 'application/json' });
@@ -527,19 +654,20 @@ function exportBackup(){
   toast('💾 Respaldo descargado');
 }
 
-function importBackup(file){
+async function importBackup(file){
   const reader = new FileReader();
 
-  reader.onload = ev => {
+  reader.onload = async ev => {
     try{
       const parsed = JSON.parse(ev.target.result);
       if(!parsed.products) throw new Error('formato inválido');
 
-      window.DB.products  = parsed.products  || [];
-      window.DB.tickets   = parsed.tickets   || [];
-      window.DB.clients   = parsed.clients   || [];
-      window.DB.suppliers = parsed.suppliers || [];
-      window.DB.orders    = parsed.orders    || [];
+      window.DB.products   = parsed.products   || [];
+      window.DB.tickets    = parsed.tickets    || [];
+      window.DB.clients    = parsed.clients    || [];
+      window.DB.suppliers  = parsed.suppliers  || [];
+      window.DB.orders     = parsed.orders     || [];
+      window.DB.categories = parsed.categories || [];
       window.DB.settings = Object.assign(
         { currency: 'USD', refCurrency: 'VES', tasaDia: 0, tasaActualizada: null },
         parsed.settings || {}
@@ -547,26 +675,16 @@ function importBackup(file){
       window.DB.ventaCounter = parsed.ventaCounter || {};
       window.DB.version = parsed.version || 1;
 
-      if(window.DB.version < 2)  migrateToLotes();
-      if(window.DB.version < 3)  migrateToMultiFotos();
-      if(window.DB.version < 4)  migrateToTasa();
-      if(window.DB.version < 5)  migrateToNomenclatura();
-      if(window.DB.version < 6)  migrateToTickets();
-      if(window.DB.version < 7)  migrateToClients();
-      if(window.DB.version < 8)  migrateToSuppliers();
-      if(window.DB.version < 9)  migrateToOrders();
-      if(window.DB.version < 10) migrateToSupplierProducts();
-      if(window.DB.version < 11) migrateToFotosIndexedDB();
-      if(window.DB.version < 13) migrateToCategories();
-      migrateCategoriasEmoji();
+      if(window.DB.version < STORAGE_VERSION){
+        await correrMigraciones();
+      }
 
       window.DB.version = STORAGE_VERSION;
-      saveDB();
+      await idbSet('db', window.DB);
 
-      precargarFotos().then(() => {
-        renderAll();
-        toast('✅ Respaldo restaurado');
-      });
+      await precargarFotos();
+      renderAll();
+      toast('✅ Respaldo restaurado');
     }catch(err){
       console.error('Error al importar:', err);
       toast('⚠️ Archivo inválido');
@@ -574,4 +692,30 @@ function importBackup(file){
   };
 
   reader.readAsText(file);
+}
+
+/* =========================================================
+   INFO DE ALMACENAMIENTO (útil para debug)
+   ========================================================= */
+async function infoAlmacenamiento(){
+  let ls = 0;
+  try{
+    ls = new Blob([localStorage.getItem(STORAGE_KEY) || '']).size;
+  }catch(e){}
+
+  let idb = 0;
+  try{
+    idb = new Blob([JSON.stringify(window.DB)]).size;
+  }catch(e){}
+
+  return {
+    localStorageKB: (ls / 1024).toFixed(1),
+    idbKB: (idb / 1024).toFixed(1),
+    productos: (window.DB.products || []).length,
+    tickets: (window.DB.tickets || []).length,
+    orders: (window.DB.orders || []).length,
+    clientes: (window.DB.clients || []).length,
+    fotos: Object.keys(window.FOTOS || {}).length,
+    comprobantes: Object.keys(window.COMPROBANTES || {}).length
+  };
 }

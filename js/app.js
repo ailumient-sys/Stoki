@@ -506,15 +506,20 @@ function safeInit(nombre, fn){
   catch(e){ console.warn(`[init] Falló "${nombre}":`, e); }
 }
 
-function init(){
-  safeInit('loadDB',      () => loadDB());
+async function init(){
+  /* Cargar DB completo de IndexedDB (o migrar de localStorage) */
+  try{
+    await loadDB();
+  }catch(e){
+    console.warn('[init] loadDB falló:', e);
+  }
 
-  safeInit('fotos', () => {
-    if(typeof precargarFotos !== 'function') return;
-    precargarFotos().then(() => {
-      if(typeof renderAll === 'function') renderAll();
-    }).catch(e => console.warn('[init] precargarFotos falló:', e));
-  });
+  /* Cargar fotos y comprobantes */
+  try{
+    await precargarFotos();
+  }catch(e){
+    console.warn('[init] precargarFotos falló:', e);
+  }
 
   safeInit('loadSession', () => loadSession());
   safeInit('loadCarrito', () => loadCarrito());
@@ -555,7 +560,7 @@ function init(){
 }
 
 if(document.readyState === 'loading'){
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => init());
 } else {
   init();
 }
