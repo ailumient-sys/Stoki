@@ -1,0 +1,139 @@
+/* =========================================================
+   apariencia.css
+   ========================================================= */
+
+/* Header custom */
+header.tema-custom {
+  background: var(--header-bg, var(--bg)) !important;
+  background-size: var(--header-bg-size, auto) !important;
+  background-position: var(--header-bg-pos, center) !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Fondo de la app */
+body.tema-custom {
+  background-color: var(--app-bg-color, var(--bg)) !important;
+  background-image: var(--app-bg-image, none) !important;
+  background-size: cover !important;
+  background-position: center !important;
+  background-attachment: fixed !important;
+  background-repeat: no-repeat !important;
+}
+
+/* Los views quedan transparentes para que se vea el fondo */
+body.tema-custom .view {
+  background: transparent !important;
+}
+
+/* Modal */
+.ap-modal .sheet {
+  max-height: 92dvh;
+}
+
+.ap-section {
+  margin-bottom: 20px;
+}
+
+.ap-section-title {
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-bottom: 10px;
+}
+
+/* Presets de gradiente */
+.ap-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.ap-prev {
+  border: 2px solid transparent;
+  border-radius: 12px;
+  height: 60px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.6);
+  padding: 0;
+  transition: transform .12s, border-color .15s;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+}
+
+.ap-prev:active {
+  transform: scale(.96);
+}
+
+.ap-prev.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--green);
+}
+
+/* Fila de imagen */
+.ap-img-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.ap-img-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background: var(--bg4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex: 0 0 auto;
+  background-size: cover;
+  background-position: center;
+  overflow: hidden;
+}
+
+.ap-img-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ap-img-nombre {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--txt);
+  margin-bottom: 2px;
+}
+
+.ap-img-sub {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+}
+
+.ap-img-btn {
+  background: var(--bg4);
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--txt);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.ap-img-btn.danger {
+  background: rgba(239, 68, 68, .14);
+  color: var(--red);
+}

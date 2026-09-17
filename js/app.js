@@ -521,6 +521,13 @@ async function init(){
     console.warn('[init] precargarFotos falló:', e);
   }
 
+  /* Aplicar apariencia guardada */
+  try{
+    if(typeof aplicarApariencia === 'function') aplicarApariencia();
+  }catch(e){
+    console.warn('[init] aplicarApariencia falló:', e);
+  }
+
   safeInit('loadSession', () => loadSession());
   safeInit('loadCarrito', () => loadCarrito());
 

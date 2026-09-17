@@ -10,6 +10,7 @@ const MORE_ITEMS = [
   { tab: 6, icon: '👥', titulo: 'Clientes',      sub: 'Historial por cliente' },
   { action: 'categorias', icon: '🏷️', titulo: 'Categorías',    sub: 'Organizá tus productos' },
   { action: 'ayuda',      icon: '❓', titulo: 'Ayuda',         sub: 'Guía de la app' },
+  { action: 'apariencia', icon: '🎨', titulo: 'Apariencia',    sub: 'Cambiá el tema y fondo' },
   { tab: 7, icon: '🏭', titulo: 'Proveedores',   sub: 'Datos y WhatsApp directo' }
 ];
 
@@ -47,7 +48,9 @@ function openMoreMenu(){
       const tab = btn.dataset.go;
       const action = btn.dataset.action;
       closeMoreMenu();
-      if(action === 'ayuda'){
+      if(action === 'apariencia'){
+        setTimeout(() => abrirApariencia(), 120);
+      } else if(action === 'ayuda'){
         setTimeout(() => abrirAyuda(), 120);
       } else if(action === 'categorias'){
         setTimeout(() => abrirGestionCategorias(), 120);

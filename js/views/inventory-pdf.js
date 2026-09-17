@@ -42,22 +42,16 @@ async function dibujarMarcaDeAguaLogoPDF(doc, W, H, opacidad){
   if(!logo) return;
 
   doc.setGState(new doc.GState({ opacity: op }));
-  const isPortrait = H > W;
+
+  const s = 22;   /* Logo chico */
+  const m = 10;   /* Margen desde el borde */
 
   try{
-    if(isPortrait){
-      const s = 80;
-      doc.addImage(logo, 'PNG', W * 0.10, H * 0.12, s, s);
-      doc.addImage(logo, 'PNG', W * 0.55, H * 0.30, s, s);
-      doc.addImage(logo, 'PNG', W * 0.20, H * 0.50, s, s);
-      doc.addImage(logo, 'PNG', W * 0.60, H * 0.70, s, s);
-      doc.addImage(logo, 'PNG', W * 0.15, H * 0.88, s, s);
-    } else {
-      const s = 90;
-      doc.addImage(logo, 'PNG', W * 0.08, H * 0.25, s, s);
-      doc.addImage(logo, 'PNG', W * 0.45, H * 0.60, s, s);
-      doc.addImage(logo, 'PNG', W * 0.75, H * 0.15, s, s);
-    }
+    /* 4 esquinas */
+    doc.addImage(logo, 'PNG', m, m, s, s);                     /* arriba izq */
+    doc.addImage(logo, 'PNG', W - s - m, m, s, s);             /* arriba der */
+    doc.addImage(logo, 'PNG', m, H - s - m, s, s);             /* abajo izq */
+    doc.addImage(logo, 'PNG', W - s - m, H - s - m, s, s);     /* abajo der */
   }catch(e){
     console.warn('Error al dibujar logo:', e);
   }
@@ -875,7 +869,7 @@ async function generarCatalogoPDF(op, noPreview){
 
         if(op.imagenFondo){
           dibujarImagenFondoPDF(doc, op.imagenFondo, W, H);
-          await dibujarMarcaDeAguaLogoPDF(doc, W, H, 0.30);
+          await dibujarMarcaDeAguaLogoPDF(doc, W, H, 0.70);
         } else {
           await dibujarMarcaDeAguaLogoPDF(doc, W, H, 0.05);
         }
@@ -941,9 +935,7 @@ async function generarCatalogoPDF(op, noPreview){
 /* Imagen de fondo */
 function dibujarImagenFondoPDF(doc, base64, W, H){
   try{
-    doc.setGState(new doc.GState({ opacity: 0.25 }));
-    /* Adaptar a la página */
-    const ratio = base64 ? 1 : 1;
+    doc.setGState(new doc.GState({ opacity: 0.90 }));
     doc.addImage(base64, 'JPEG', 0, 0, W, H, undefined, 'FAST');
     doc.setGState(new doc.GState({ opacity: 1 }));
   }catch(e){

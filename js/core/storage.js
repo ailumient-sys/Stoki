@@ -32,7 +32,15 @@ window.DB = {
     currency: 'USD',
     refCurrency: 'VES',
     tasaDia: 0,
-    tasaActualizada: null
+    tasaActualizada: null,
+    apariencia: {
+      preset: 'verde',
+      headerTipo: 'gradient',
+      headerValor: 'linear-gradient(135deg, #22c55e, #16a34a)',
+      fondoColor: null,
+      imagenHeader: null,
+      imagenFondo: null
+    }
   },
   ventaCounter: {},
   historialCompras: []
