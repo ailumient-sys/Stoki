@@ -950,3 +950,27 @@ function dibujarImagenFondoPDF(doc, base64, W, H){
     console.warn('Error al dibujar fondo:', e);
   }
 }
+
+/* =========================================================
+   FOOTER CON CATEGORÍA + PÁGINA
+   ========================================================= */
+function dibujarFooterCategoriaPDF(doc, { W, H, M, categoriaNombre, paginaActual, paginasTotales }){
+  doc.setDrawColor(...PDF_VERDE);
+  doc.setLineWidth(0.3);
+  doc.line(M, H - 12, W - M, H - 12);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(...PDF_GRIS);
+
+  const negocio = (window.DB.settings.business || {}).nombre || 'Stoki';
+  doc.text(negocio, M, H - 6);
+
+  const texto = categoriaNombre
+    ? `${categoriaNombre}  ${paginaActual}/${paginasTotales}`
+    : `Página ${paginaActual}/${paginasTotales}`;
+
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(...PDF_VERDE);
+  doc.text(texto, W - M, H - 6, { align: 'right' });
+}
