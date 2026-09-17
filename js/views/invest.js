@@ -78,6 +78,8 @@ function buildInvestPanel(){
 
     ${data.sobregiro ? buildSobregiroBanner(data) : ''}
 
+    ${data.productos.length > 0 ? buildSimulador(data) : ''}
+
     ${data.productos.length === 0
       ? buildListaVacia()
       : `
@@ -100,7 +102,97 @@ function buildInvestPanel(){
         🗑️ Cancelar sesión
       </button>
     ` : ''}
+
+    ${buildHistorialCompras()}
   `;
+}
+
+/* =========================================================
+   HISTORIAL DE COMPRAS
+   ========================================================= */
+function buildHistorialCompras(){
+  const historial = window.DB.historialCompras || [];
+
+  if(!historial.length) return '';
+
+  const abierto = window.invHistorialAbierto === true;
+
+  const items = historial.slice(0, 10).map(h => {
+    const fecha = fmtDateTime(h.fecha);
+    const cant = h.productos.length;
+    return `
+      <div class="hist-card" data-hist="${h.id}">
+        <div class="hist-head">
+          <span class="hist-fecha">${fecha}</span>
+          <span class="hist-cant">${cant} producto${cant !== 1 ? 's' : ''}</span>
+        </div>
+        <div class="hist-montos">
+          <span class="hist-costo">${fmt(h.costoTotal)}</span>
+          <span class="hist-ganancia">${h.gananciaTotal >= 0 ? '+' : ''}${fmt(h.gananciaTotal)}</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="hist-section ${abierto ? 'open' : ''}" id="hist-section">
+      <div class="hist-toggle" id="hist-toggle">
+        <span class="hist-titulo">📜 Historial de compras (${historial.length})</span>
+        <span class="hist-chevron">${abierto ? '▼' : '▶'}</span>
+      </div>
+      <div class="hist-body">
+        ${items}
+      </div>
+    </div>`;
+}
+
+function abrirDetalleHistorial(id){
+  const h = (window.DB.historialCompras || []).find(x => x.id === id);
+  if(!h) return;
+
+  if(document.querySelector('#m-hist-detalle')) return;
+
+  const fecha = fmtDateTime(h.fecha);
+
+  const productosHTML = h.productos.map(p => `
+    <div class="hist-prod">
+      <div class="hist-prod-info">
+        <div class="hist-prod-nombre">${esc(p.nombre)}</div>
+        <div class="hist-prod-meta">${p.unidades} u × ${fmt(p.costoUnitario)}</div>
+      </div>
+      <div class="hist-prod-total">${fmt(p.unidades * p.costoUnitario)}</div>
+    </div>
+  `).join('');
+
+  const html = `
+    <div class="overlay centered open" id="m-hist-detalle">
+      <div class="sheet" style="position:relative">
+        <button class="x" id="hist-close">✕</button>
+        <h2>📜 Compra del ${fecha}</h2>
+        <div class="sub">${h.productos.length} producto${h.productos.length !== 1 ? 's' : ''}</div>
+
+        <div class="hist-detalle-list">${productosHTML}</div>
+
+        <div class="ped-totales">
+          <div class="ped-total-line">
+            <span>Costo total</span>
+            <b>${fmt(h.costoTotal)}</b>
+          </div>
+          <div class="ped-ganancia">
+            Ganancia estimada: ${h.gananciaTotal >= 0 ? '+' : ''}${fmt(h.gananciaTotal)}
+          </div>
+        </div>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  document.querySelector('#hist-close').addEventListener('click', () => {
+    document.querySelector('#m-hist-detalle').remove();
+  });
+
+  document.querySelector('#m-hist-detalle').addEventListener('click', e => {
+    if(e.target.id === 'm-hist-detalle') e.target.remove();
+  });
 }
 
 function buildSobregiroBanner(data){
@@ -204,7 +296,109 @@ function buildInvestThumb(p){
   return `<div style="${base}">${inicial}</div>`;
 }
 
+
+/* =========================================================
+   SIMULADOR DE PRECIOS
+   ========================================================= */
+function buildSimulador(data){
+  const margenesRapidos = [30, 40, 50, 60, 80, 100];
+  const marginActual = window.invSimuladorMargen || 40;
+
+  return `
+    <div class="sim-card">
+      <div class="sim-header">
+        <span class="sim-titulo">🎚️ Simulador de precios</span>
+        <span class="sim-margen-actual">${marginActual}%</span>
+      </div>
+
+      <div class="sim-sub">
+        Ajustá el margen y mirá cómo cambia la ganancia.
+      </div>
+
+      <div class="sim-botones">
+        ${margenesRapidos.map(m => `
+          <button class="sim-btn ${m === marginActual ? 'active' : ''}"
+                  data-margen="${m}" type="button">
+            ${m}%
+          </button>
+        `).join('')}
+      </div>
+
+      <div class="sim-resultados" id="sim-resultados">
+        ${buildSimResultados(data, marginActual)}
+      </div>
+    </div>`;
+}
+
+function buildSimResultados(data, margenPct){
+  /* Calcular qué pasaría si todos los productos tuvieran ese margen */
+  let costoTotal = 0;
+  let ingresoActual = 0;
+  let ingresoSimulado = 0;
+
+  data.productos.forEach(p => {
+    const costo = p.unidades * p.costoUnitario;
+    costoTotal += costo;
+
+    const precioVentaActual = precioVentaTemp(p);
+    ingresoActual += precioVentaActual * p.unidades;
+
+    /* Simulado: costo * (1 + margen/100) */
+    const precioSimulado = p.costoUnitario * (1 + margenPct / 100);
+    ingresoSimulado += precioSimulado * p.unidades;
+  });
+
+  const ganActual = ingresoActual - costoTotal;
+  const ganSim = ingresoSimulado - costoTotal;
+  const dif = ganSim - ganActual;
+  const colorDif = dif >= 0 ? 'var(--green)' : 'var(--red)';
+
+  return `
+    <div class="sim-line">
+      <span>Costo total</span>
+      <b>${fmt(costoTotal)}</b>
+    </div>
+    <div class="sim-line">
+      <span>Ganancia actual</span>
+      <b>${ganActual >= 0 ? '+' : ''}${fmt(ganActual)}</b>
+    </div>
+    <div class="sim-line sim-line-destacada">
+      <span>Ganancia con ${margenPct}%</span>
+      <b style="color:var(--green)">+${fmt(ganSim)}</b>
+    </div>
+    <div class="sim-line">
+      <span>Diferencia</span>
+      <b style="color:${colorDif}">${dif >= 0 ? '+' : ''}${fmt(dif)}</b>
+    </div>
+    <div class="sim-footer-hint">
+      Esto es solo una simulación. No cambia los precios de tus productos.
+    </div>`;
+}
+
 function bindInvestPanelEvents(){
+  /* Historial */
+  const histToggle = $('#hist-toggle');
+  if(histToggle){
+    histToggle.addEventListener('click', () => {
+      window.invHistorialAbierto = !window.invHistorialAbierto;
+      renderInvest();
+    });
+  }
+
+  document.querySelectorAll('.hist-card').forEach(card => {
+    card.addEventListener('click', () => {
+      abrirDetalleHistorial(card.dataset.hist);
+    });
+  });
+
+  /* Simulador: botones de margen */
+  document.querySelectorAll('.sim-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      window.invSimuladorMargen = +btn.dataset.margen;
+      renderInvest();
+    });
+  });
+
   const addBtn = $('#invest-add');
   if(addBtn) addBtn.addEventListener('click', () => openInvestProduct(null));
 
@@ -841,6 +1035,44 @@ async function finishPurchase(){
 
     window.DB.products.push(producto);
     creados++;
+  }
+
+  /* Guardar en el historial de compras */
+  if(!Array.isArray(window.DB.historialCompras)){
+    window.DB.historialCompras = [];
+  }
+
+  const productosHist = s.productos.filter(tmp =>
+    seleccionados.includes(tmp.tempId)
+  ).map(tmp => ({
+    nombre: tmp.nombre,
+    unidades: tmp.unidades,
+    costoUnitario: tmp.costoUnitario,
+    categoriaId: tmp.categoriaId || null
+  }));
+
+  let costoTotal = 0;
+  let gananciaTotal = 0;
+
+  s.productos.filter(tmp => seleccionados.includes(tmp.tempId)).forEach(tmp => {
+    const costo = tmp.unidades * tmp.costoUnitario;
+    const precio = precioVentaTemp(tmp);
+    const gan = (precio - tmp.costoUnitario) * tmp.unidades;
+    costoTotal += costo;
+    gananciaTotal += gan;
+  });
+
+  window.DB.historialCompras.unshift({
+    id: 'hist_' + uid(),
+    fecha: new Date().toISOString(),
+    productos: productosHist,
+    costoTotal,
+    gananciaTotal
+  });
+
+  /* Limitar a 50 entradas */
+  if(window.DB.historialCompras.length > 50){
+    window.DB.historialCompras = window.DB.historialCompras.slice(0, 50);
   }
 
   saveDB();

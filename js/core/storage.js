@@ -34,7 +34,8 @@ window.DB = {
     tasaDia: 0,
     tasaActualizada: null
   },
-  ventaCounter: {}
+  ventaCounter: {},
+  historialCompras: []
 };
 
 window.SESSION      = null;
@@ -319,6 +320,7 @@ async function loadDB(){
       window.DB.suppliers  = parsed.suppliers  || [];
       window.DB.orders     = parsed.orders     || [];
       window.DB.categories = parsed.categories || [];
+      window.DB.historialCompras = parsed.historialCompras || [];
       window.DB.settings   = Object.assign(
         { currency: 'USD', refCurrency: 'VES', tasaDia: 0, tasaActualizada: null },
         parsed.settings || {}
@@ -668,6 +670,7 @@ async function importBackup(file){
       window.DB.suppliers  = parsed.suppliers  || [];
       window.DB.orders     = parsed.orders     || [];
       window.DB.categories = parsed.categories || [];
+      window.DB.historialCompras = parsed.historialCompras || [];
       window.DB.settings = Object.assign(
         { currency: 'USD', refCurrency: 'VES', tasaDia: 0, tasaActualizada: null },
         parsed.settings || {}
