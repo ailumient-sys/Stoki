@@ -69,34 +69,11 @@ async function dibujarMarcaDeAguaLogoPDF(doc, W, H){
    ========================================================= */
 function previsualizarPDF(doc, nombreArchivo, tipo){
   const pdfDataUri = doc.output('datauristring');
-  const esAPK = typeof tieneCapacitor === 'function' && tieneCapacitor();
 
   const overlay = document.createElement('div');
   overlay.className = 'overlay centered open';
   overlay.id = 'm-pdf-preview';
   overlay.style.zIndex = '200';
-
-  const bodyHTML = esAPK
-    ? `
-      <div style="text-align:center;padding:30px 10px">
-        <div style="font-size:70px;margin-bottom:16px">📄</div>
-        <div style="font-size:15px;font-weight:800;color:var(--txt);
-                    margin-bottom:8px">PDF listo</div>
-        <div style="font-size:12px;color:var(--dim);line-height:1.5">
-          El archivo se generó correctamente.<br>
-          Tocá <b>Guardar / Compartir</b> para verlo<br>
-          en tu visor o enviarlo.
-        </div>
-      </div>
-    `
-    : `
-      <div style="flex:1;overflow:hidden;border-radius:10px;
-                  background:#fff;border:1px solid var(--line)">
-        <iframe src="${pdfDataUri}"
-                style="width:100%;height:65vh;border:0;background:#fff">
-        </iframe>
-      </div>
-    `;
 
   overlay.innerHTML = `
     <div class="sheet" style="max-width:96vw;max-height:96vh;
@@ -109,7 +86,15 @@ function previsualizarPDF(doc, nombreArchivo, tipo){
         ${esc(nombreArchivo)}
       </div>
 
-      ${bodyHTML}
+      <div id="pdf-prev-pages"
+           style="flex:1;overflow-y:auto;border-radius:10px;
+                  background:#1a1a1a;padding:8px;
+                  display:flex;flex-direction:column;gap:10px;
+                  align-items:center;min-height:200px">
+        <div style="color:var(--dim);padding:30px;text-align:center;font-size:13px">
+          ⏳ Cargando preview...
+        </div>
+      </div>
 
       <button class="btn-main" id="pdf-prev-save" style="margin-top:12px">
         📤 Guardar / Compartir
@@ -119,28 +104,84 @@ function previsualizarPDF(doc, nombreArchivo, tipo){
 
   document.body.appendChild(overlay);
 
-  document.querySelector('#pdf-prev-close').addEventListener('click', () => {
-    overlay.remove();
-  });
-
+  document.querySelector('#pdf-prev-close').addEventListener('click', () => overlay.remove());
   overlay.addEventListener('click', e => {
     if(e.target.id === 'm-pdf-preview') overlay.remove();
   });
 
   document.querySelector('#pdf-prev-save').addEventListener('click', async () => {
     overlay.remove();
+    const base64 = doc.output('datauristring');
 
-    if(esAPK){
-      const base64 = doc.output('datauristring');
+    if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
       const r = await guardarArchivo(base64, nombreArchivo, tipo);
-      if(!r.ok){
-        toast('⚠️ No se pudo guardar');
-      }
+      if(!r.ok) toast('⚠️ No se pudo guardar');
     } else {
       doc.save(nombreArchivo);
       toast('📄 PDF descargado');
     }
   });
+
+  /* Renderizar el PDF con PDF.js */
+  renderizarPDFEnPreview(pdfDataUri);
+}
+
+async function renderizarPDFEnPreview(pdfDataUri){
+  const cont = document.querySelector('#pdf-prev-pages');
+  if(!cont) return;
+
+  if(typeof window.pdfjsLib === 'undefined'){
+    cont.innerHTML = `
+      <div style="color:var(--dim);padding:30px;text-align:center;font-size:13px">
+        ⚠️ PDF.js no cargó.<br>Usá el botón de abajo para ver el archivo.
+      </div>`;
+    return;
+  }
+
+  try{
+    /* Configurar el worker (necesario para que funcione) */
+    if(!window.pdfjsLib.GlobalWorkerOptions.workerSrc){
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+    }
+
+    /* Convertir data URI a Uint8Array */
+    const base64 = pdfDataUri.split(',')[1];
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+    const pdf = await window.pdfjsLib.getDocument({ data: bytes }).promise;
+
+    cont.innerHTML = '';
+
+    for(let n = 1; n <= pdf.numPages; n++){
+      const page = await pdf.getPage(n);
+      const viewport = page.getViewport({ scale: 1.4 });
+
+      const canvas = document.createElement('canvas');
+      canvas.width  = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.maxWidth = '100%';
+      canvas.style.height = 'auto';
+      canvas.style.borderRadius = '6px';
+      canvas.style.background = '#fff';
+      canvas.style.boxShadow = '0 2px 8px rgba(0,0,0,.4)';
+
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      cont.appendChild(canvas);
+    }
+
+  }catch(e){
+    console.error('Error renderizando PDF:', e);
+    cont.innerHTML = `
+      <div style="color:var(--dim);padding:30px;text-align:center;font-size:13px">
+        ⚠️ No se pudo mostrar el preview.<br>
+        Usá el botón de abajo para abrirlo.
+      </div>`;
+  }
 }/* =========================================================
    EXPORTAR INVENTARIO
    ========================================================= */
