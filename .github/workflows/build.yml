@@ -112,13 +112,6 @@ jobs:
           name: stoki-apk
           path: ${{ steps.sign_app.outputs.signedReleaseFile }}
 
-      - name: Copiar APK con nombre versionado
-        run: |
-          SRC="${{ steps.sign_app.outputs.signedReleaseFile }}"
-          DST="android/app/build/outputs/apk/release/Stoki-build-${{ github.run_number }}.apk"
-          cp "$SRC" "$DST"
-          echo "APK versionado: $DST"
-
       - name: Publicar como Release
         uses: softprops/action-gh-release@v2
         with:
@@ -126,7 +119,5 @@ jobs:
           name: Stoki build #${{ github.run_number }} (${{ github.run_attempt }}) (${{ github.run_attempt }})
           body: |
             Build automático generado desde el commit ${{ github.sha }}
-          files: |
-            ${{ steps.sign_app.outputs.signedReleaseFile }}
-            android/app/build/outputs/apk/release/Stoki-build-${{ github.run_number }}.apk
+          files: ${{ steps.sign_app.outputs.signedReleaseFile }}
           token: ${{ secrets.GITHUB_TOKEN }}
