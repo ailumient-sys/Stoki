@@ -1,8 +1,6 @@
 /* =========================================================
    views/inventory-pdf.js — Exportar a PDF
-   - Inventario: tabla técnica (landscape)
-   - Catálogo: cuadrícula con imágenes (portrait) para clientes
-   v13: el toast de éxito lo maneja exporter.js
+   v14: marca de agua con logo + previsualización
    ========================================================= */
 
 const PDF_VERDE      = [34, 197, 94];
@@ -12,8 +10,123 @@ const PDF_GRIS       = [130, 130, 130];
 const PDF_GRIS_CLARO = [245, 246, 248];
 const PDF_BLANCO     = [255, 255, 255];
 
+/* Cache del logo en base64 */
+let _logoPDFCache = null;
+
+async function obtenerLogoPDF(){
+  if(_logoPDFCache) return _logoPDFCache;
+  try{
+    const resp = await fetch('icon-192.png');
+    const blob = await resp.blob();
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        _logoPDFCache = reader.result;
+        resolve(_logoPDFCache);
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(blob);
+    });
+  }catch(e){
+    console.warn('No se pudo cargar el logo:', e);
+    return null;
+  }
+}
+
 /* =========================================================
-   EXPORTAR INVENTARIO (tabla técnica)
+   MARCA DE AGUA CON LOGO
+   ========================================================= */
+async function dibujarMarcaDeAguaLogoPDF(doc, W, H){
+  const logo = await obtenerLogoPDF();
+  if(!logo) return;
+
+  doc.setGState(new doc.GState({ opacity: 0.05 }));
+  const isPortrait = H > W;
+
+  try{
+    if(isPortrait){
+      const s = 80;
+      doc.addImage(logo, 'PNG', W * 0.10, H * 0.12, s, s);
+      doc.addImage(logo, 'PNG', W * 0.55, H * 0.30, s, s);
+      doc.addImage(logo, 'PNG', W * 0.20, H * 0.50, s, s);
+      doc.addImage(logo, 'PNG', W * 0.60, H * 0.70, s, s);
+      doc.addImage(logo, 'PNG', W * 0.15, H * 0.88, s, s);
+    } else {
+      const s = 90;
+      doc.addImage(logo, 'PNG', W * 0.08, H * 0.25, s, s);
+      doc.addImage(logo, 'PNG', W * 0.45, H * 0.60, s, s);
+      doc.addImage(logo, 'PNG', W * 0.75, H * 0.15, s, s);
+    }
+  }catch(e){
+    console.warn('Error al dibujar logo:', e);
+  }
+
+  doc.setGState(new doc.GState({ opacity: 1 }));
+}
+
+/* =========================================================
+   PREVISUALIZACIÓN
+   ========================================================= */
+function previsualizarPDF(doc, nombreArchivo, tipo){
+  const pdfDataUri = doc.output('datauristring');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay centered open';
+  overlay.id = 'm-pdf-preview';
+  overlay.style.zIndex = '200';
+
+  overlay.innerHTML = `
+    <div class="sheet" style="max-width:96vw;max-height:96vh;
+                padding:10px;display:flex;flex-direction:column">
+      <button class="x" id="pdf-prev-close">✕</button>
+
+      <div style="font-size:13px;font-weight:800;text-align:center;
+                  margin:4px 30px 10px;color:var(--dim);
+                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        ${esc(nombreArchivo)}
+      </div>
+
+      <div style="flex:1;overflow:hidden;border-radius:10px;
+                  background:#fff;border:1px solid var(--line)">
+        <iframe src="${pdfDataUri}"
+                style="width:100%;height:70vh;border:0;background:#fff">
+        </iframe>
+      </div>
+
+      <button class="btn-main" id="pdf-prev-save" style="margin-top:10px">
+        📤 Guardar / Compartir
+      </button>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  document.querySelector('#pdf-prev-close').addEventListener('click', () => {
+    overlay.remove();
+  });
+
+  overlay.addEventListener('click', e => {
+    if(e.target.id === 'm-pdf-preview') overlay.remove();
+  });
+
+  document.querySelector('#pdf-prev-save').addEventListener('click', async () => {
+    overlay.remove();
+    const base64 = doc.output('datauristring');
+
+    if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
+      const r = await guardarArchivo(base64, nombreArchivo, tipo);
+      if(!r.ok){
+        toast('⚠️ No se pudo guardar');
+      }
+    } else {
+      doc.save(nombreArchivo);
+      toast('📄 PDF descargado');
+    }
+  });
+}
+
+/* =========================================================
+   EXPORTAR INVENTARIO
    ========================================================= */
 async function exportarInventarioPDF(){
   if(typeof window.jspdf === 'undefined'){
@@ -22,18 +135,13 @@ async function exportarInventarioPDF(){
   }
 
   const productos = window.DB.products || [];
-
   if(!productos.length){
     toast('⚠️ No hay productos para exportar');
     return;
   }
 
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({
-    orientation: 'landscape',
-    unit: 'mm',
-    format: 'a4'
-  });
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
@@ -73,12 +181,8 @@ async function exportarInventarioPDF(){
 
   let y = M;
 
-  dibujarHeaderPDF(doc, {
-    W, M,
-    nombreNegocio,
-    fecha,
-    valorTotalStock,
-    unidadesTotales,
+  await dibujarHeaderPDF(doc, {
+    W, M, nombreNegocio, fecha, valorTotalStock, unidadesTotales,
     cantidad: productos.length
   });
 
@@ -92,10 +196,10 @@ async function exportarInventarioPDF(){
       dibujarFooterPDF(doc, { W, H, M, valorTotalStock, unidadesTotales });
 
       doc.addPage();
-      dibujarMarcaDeAguaPDF(doc, W, H);
-      dibujarHeaderCompactoPDF(doc, { W, M, nombreNegocio, fecha });
-
       y = M + 22;
+
+      dibujarMarcaDeAguaLogoPDF(doc, W, H);
+      dibujarHeaderCompactoPDF(doc, { W, M, nombreNegocio, fecha });
       dibujarCabeceraTablaPDF(doc, y, colX, M, W);
       y += tablaCabH;
     }
@@ -108,22 +212,11 @@ async function exportarInventarioPDF(){
   dibujarFooterPDF(doc, { W, H, M, valorTotalStock, unidadesTotales });
 
   const nombreArchivo = `Inventario-${todayISO()}.pdf`;
-
-  /* Guardar (exporter.js maneja el toast) */
-  if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
-    const pdfBase64 = doc.output('datauristring');
-    const r = await guardarArchivo(pdfBase64, nombreArchivo, 'Inventario');
-    if(!r.ok){
-      toast('⚠️ No se pudo guardar el PDF');
-    }
-  } else {
-    doc.save(nombreArchivo);
-    toast('📄 PDF descargado');
-  }
+  previsualizarPDF(doc, nombreArchivo, 'Inventario');
 }
 
 /* =========================================================
-   EXPORTAR CATÁLOGO (cuadrícula con imágenes)
+   EXPORTAR CATÁLOGO
    ========================================================= */
 async function exportarCatalogoPDF(){
   if(typeof window.jspdf === 'undefined'){
@@ -132,7 +225,6 @@ async function exportarCatalogoPDF(){
   }
 
   const productos = (window.DB.products || []).filter(p => calc(p).stock > 0);
-
   if(!productos.length){
     toast('⚠️ No hay productos con stock para el catálogo');
     return;
@@ -197,7 +289,8 @@ async function exportarCatalogoPDF(){
 
       doc.setFillColor(...PDF_BLANCO);
       doc.rect(0, 0, W, H, 'F');
-      dibujarMarcaDeAguaPDF(doc, W, H);
+
+      await dibujarMarcaDeAguaLogoPDF(doc, W, H);
 
       if(pagina === 0){
         dibujarHeaderCatalogoPDF(doc, { W, M, nombreNegocio, fecha, total: lista.length });
@@ -206,7 +299,6 @@ async function exportarCatalogoPDF(){
       }
 
       const startY = pagina === 0 ? M + 40 : M + 24;
-
       const inicio = pagina * porPagina;
       const fin = Math.min(inicio + porPagina, lista.length);
 
@@ -218,30 +310,15 @@ async function exportarCatalogoPDF(){
         const x = M + col * (cardW + gapX);
         const y = startY + row * (cardH + gapY);
 
-        dibujarCardCatalogoPDF(
-          doc, x, y, cardW, cardH, imgH,
-          lista[i],
-          imagenes[i]
-        );
+        dibujarCardCatalogoPDF(doc, x, y, cardW, cardH, imgH, lista[i], imagenes[i]);
       }
-    }
-
-    const nombreArchivo = `Catalogo-${todayISO()}.pdf`;
-
-    /* Guardar (exporter.js maneja el toast) */
-    if(typeof tieneCapacitor === 'function' && tieneCapacitor()){
-      const pdfBase64 = doc.output('datauristring');
-      const r = await guardarArchivo(pdfBase64, nombreArchivo, 'Catalogo');
-      if(!r.ok){
-        toast('⚠️ No se pudo guardar el catálogo');
-      }
-    } else {
-      doc.save(nombreArchivo);
-      toast('🖼️ Catálogo descargado');
     }
 
     const loadEl = document.querySelector('#m-catalog-loading');
     if(loadEl) loadEl.remove();
+
+    const nombreArchivo = `Catalogo-${todayISO()}.pdf`;
+    previsualizarPDF(doc, nombreArchivo, 'Catalogo');
 
     if(navigator.vibrate) navigator.vibrate(20);
 
@@ -330,7 +407,6 @@ function prepararImagenCatalogo(base64, targetW, targetH){
 
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, targetW, targetH);
-
         ctx.drawImage(img, dx, dy, dw, dh);
 
         resolve(canvas.toDataURL('image/jpeg', 0.82));
@@ -348,10 +424,11 @@ function prepararImagenCatalogo(base64, targetW, targetH){
 /* =========================================================
    HEADERS Y FOOTERS
    ========================================================= */
-function dibujarHeaderPDF(doc, { W, M, nombreNegocio, fecha, valorTotalStock, unidadesTotales, cantidad }){
+async function dibujarHeaderPDF(doc, { W, M, nombreNegocio, fecha, valorTotalStock, unidadesTotales, cantidad }){
   doc.setFillColor(...PDF_BLANCO);
   doc.rect(0, 0, W, doc.internal.pageSize.getHeight(), 'F');
-  dibujarMarcaDeAguaPDF(doc, W, doc.internal.pageSize.getHeight());
+
+  await dibujarMarcaDeAguaLogoPDF(doc, W, doc.internal.pageSize.getHeight());
 
   doc.setFillColor(...PDF_VERDE);
   doc.rect(0, 0, W, 22, 'F');
@@ -375,10 +452,7 @@ function dibujarHeaderPDF(doc, { W, M, nombreNegocio, fecha, valorTotalStock, un
   y += 6;
   doc.setTextColor(...PDF_GRIS);
   doc.setFontSize(9);
-  doc.text(
-    `${cantidad} producto${cantidad !== 1 ? 's' : ''} · ${unidadesTotales} unidades en stock`,
-    M, y
-  );
+  doc.text(`${cantidad} producto${cantidad !== 1 ? 's' : ''} · ${unidadesTotales} unidades en stock`, M, y);
 
   doc.setTextColor(...PDF_VERDE);
   doc.setFont('helvetica', 'bold');
@@ -508,28 +582,4 @@ function dibujarHeaderCompactoCatalogoPDF(doc, { W, M, nombreNegocio, fecha }){
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text(`${nombreNegocio} · ${fecha}`, W - M, 9.5, { align: 'right' });
-}
-
-function dibujarMarcaDeAguaPDF(doc, W, H){
-  doc.setGState(new doc.GState({ opacity: 0.10 }));
-  doc.setTextColor(...PDF_VERDE);
-  doc.setFont('helvetica', 'bold');
-
-  const isPortrait = H > W;
-
-  if(isPortrait){
-    doc.setFontSize(80);
-    doc.text('Stoki', W * 0.30, H * 0.18, { angle: 45, align: 'center' });
-    doc.text('Stoki', W * 0.75, H * 0.36, { angle: 45, align: 'center' });
-    doc.text('Stoki', W * 0.20, H * 0.55, { angle: 45, align: 'center' });
-    doc.text('Stoki', W * 0.65, H * 0.72, { angle: 45, align: 'center' });
-    doc.text('Stoki', W * 0.30, H * 0.92, { angle: 45, align: 'center' });
-  } else {
-    doc.setFontSize(110);
-    doc.text('Stoki', W * 0.28, H * 0.55, { angle: 45, align: 'center' });
-    doc.text('Stoki', W * 0.70, H * 0.88, { angle: 45, align: 'center' });
-    doc.text('Stoki', W * 0.05, H * 0.92, { angle: 45, align: 'center' });
-  }
-
-  doc.setGState(new doc.GState({ opacity: 1 }));
 }
