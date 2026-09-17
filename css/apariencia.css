@@ -139,19 +139,23 @@ body.tema-custom .view {
 }
 
 /* =========================================================
-   TRANSPARENCIA DE ELEMENTOS CUANDO EL TEMA ESTÁ ACTIVO
-   (hace visible la imagen de fondo con efecto vidrio)
+   TRANSPARENCIA DE ELEMENTOS CON VARIABLES DINÁMICAS
    ========================================================= */
 
-/* Sobreescribir los colores base para que sean translúcidos */
+/* Variables de opacidad (se controlan desde el slider) */
 body.tema-custom {
-  --bg2: rgba(22, 26, 34, 0.72);
-  --bg3: rgba(30, 36, 48, 0.58);
-  --bg4: rgba(37, 44, 58, 0.48);
+  --ap-op: 0.72;   /* opacidad base (se actualiza por JS) */
+}
+
+/* Colores base con opacidad dinámica */
+body.tema-custom {
+  --bg2: rgba(22, 26, 34, var(--ap-op));
+  --bg3: rgba(30, 36, 48, calc(var(--ap-op) * 0.85));
+  --bg4: rgba(37, 44, 58, calc(var(--ap-op) * 0.70));
   --line: rgba(42, 49, 64, 0.35);
 }
 
-/* Efecto "vidrio esmerilado" en los elementos principales */
+/* Blur en elementos principales */
 body.tema-custom .card,
 body.tema-custom .inv-item,
 body.tema-custom .order-card,
@@ -176,9 +180,9 @@ body.tema-custom .nav-btn {
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Bottom nav y header también */
+/* Bottom nav y header */
 body.tema-custom .bottom-nav {
-  background: rgba(22, 26, 34, 0.80) !important;
+  background: rgba(22, 26, 34, 0.85) !important;
   backdrop-filter: blur(15px);
   -webkit-backdrop-filter: blur(15px);
 }
@@ -188,25 +192,25 @@ header.tema-custom {
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Inputs un poco más opacos para que sean legibles */
+/* Inputs siempre legibles (más opacos que el resto) */
 body.tema-custom input,
 body.tema-custom select,
 body.tema-custom textarea,
 body.tema-custom .inv-search input,
 body.tema-custom .cli-picker-search {
-  background: rgba(30, 36, 48, 0.88) !important;
+  background: rgba(30, 36, 48, 0.92) !important;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* Modales semi-transparentes pero legibles */
+/* Modales siempre legibles */
 body.tema-custom .sheet {
-  background: rgba(22, 26, 34, 0.94) !important;
+  background: rgba(22, 26, 34, 0.96) !important;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
 
-/* Overlay oscuro sobre el fondo para mejorar contraste del texto */
+/* Overlay sutil sobre el fondo para mejorar contraste del texto */
 body.tema-custom::after {
   content: '';
   position: fixed;
@@ -216,7 +220,7 @@ body.tema-custom::after {
   z-index: 0;
 }
 
-/* Asegurar que el contenido quede por encima */
+/* Contenido por encima del overlay */
 body.tema-custom header,
 body.tema-custom .views,
 body.tema-custom .bottom-nav,
@@ -226,10 +230,77 @@ body.tema-custom .cart-fab {
   z-index: 1;
 }
 
-body.tema-custom .bottom-nav {
-  z-index: 80;
-}
+body.tema-custom .bottom-nav { z-index: 80; }
 body.tema-custom .fab,
-body.tema-custom .cart-fab {
-  z-index: 60;
+body.tema-custom .cart-fab { z-index: 60; }
+
+/* =========================================================
+   SLIDER DE OPACIDAD
+   ========================================================= */
+.ap-slider-row {
+  background: var(--bg3);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.ap-slider-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.ap-slider-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--txt);
+}
+
+.ap-slider-valor {
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--green);
+  font-variant-numeric: tabular-nums;
+}
+
+.ap-slider {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--green) 0%, var(--green) 50%, var(--bg4) 50%, var(--bg4) 100%);
+  outline: none;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.ap-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green);
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.4);
+}
+
+.ap-slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--green);
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.4);
+}
+
+.ap-slider-hint {
+  font-size: 11px;
+  color: var(--dim);
+  font-weight: 600;
+  margin-top: 8px;
+  text-align: center;
 }

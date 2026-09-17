@@ -21,7 +21,8 @@ function aparienciaDefault(){
     headerValor: APARIENCIA_PRESETS[0].header,
     fondoColor: null,
     imagenHeader: null,
-    imagenFondo: null
+    imagenFondo: null,
+    opacidad: 0.72
   };
 }
 
@@ -64,6 +65,10 @@ function aplicarApariencia(){
       html.style.removeProperty('--app-bg-color');
     }
   }
+
+  /* Opacidad dinámica de los elementos */
+  const op = (typeof ap.opacidad === 'number') ? ap.opacidad : 0.72;
+  document.body.style.setProperty('--ap-op', op);
 
   /* Toggle clase para que el CSS se aplique */
   document.body.classList.add('tema-custom');
@@ -130,6 +135,20 @@ function abrirApariencia(){
             </div>
             <button class="ap-img-btn" id="ap-pick-header" type="button">Elegir</button>
             ${ap.imagenHeader ? '<button class="ap-img-btn danger" id="ap-del-header" type="button">✕</button>' : ''}
+          </div>
+        </div>
+
+        <div class="ap-section">
+          <div class="ap-section-title">Opacidad de los elementos</div>
+          <div class="ap-slider-row">
+            <div class="ap-slider-top">
+              <span class="ap-slider-label">Transparencia</span>
+              <span class="ap-slider-valor" id="ap-op-valor">${Math.round((ap.opacidad || 0.72) * 100)}%</span>
+            </div>
+            <input type="range" class="ap-slider" id="ap-slider-op"
+                   min="30" max="100" step="1"
+                   value="${Math.round((ap.opacidad || 0.72) * 100)}">
+            <div class="ap-slider-hint">Menos % = más transparente la imagen de fondo se ve</div>
           </div>
         </div>
 
@@ -241,6 +260,31 @@ function abrirApariencia(){
     });
   }
 
+  /* Slider de opacidad (tiempo real) */
+  const slider = document.querySelector('#ap-slider-op');
+  const valorLabel = document.querySelector('#ap-op-valor');
+
+  if(slider){
+    slider.addEventListener('input', () => {
+      const pct = +slider.value;
+      const op = pct / 100;
+
+      /* Actualizar el label */
+      if(valorLabel) valorLabel.textContent = pct + '%';
+
+      /* Actualizar la variable CSS en vivo */
+      document.body.style.setProperty('--ap-op', op);
+
+      /* Actualizar el gradiente del slider */
+      slider.style.background = `linear-gradient(to right, var(--green) 0%, var(--green) ${pct}%, var(--bg4) ${pct}%, var(--bg4) 100%)`;
+
+      /* Guardar en DB (sin renderizar todo) */
+      const ap = obtenerApariencia();
+      ap.opacidad = op;
+      saveDB();
+    });
+  }
+
   /* Reset */
   document.querySelector('#ap-reset').addEventListener('click', () => {
     window.DB.settings.apariencia = aparienciaDefault();
@@ -249,6 +293,12 @@ function abrirApariencia(){
     document.querySelector('#m-apariencia').remove();
     toast('✅ Apariencia restaurada');
   });
+
+  /* Inicializar el gradiente del slider */
+  if(slider){
+    const pct = +slider.value;
+    slider.style.background = `linear-gradient(to right, var(--green) 0%, var(--green) ${pct}%, var(--bg4) ${pct}%, var(--bg4) 100%)`;
+  }
 
   /* Limpiar inputs al cerrar */
   const limpiar = () => {
