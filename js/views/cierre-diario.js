@@ -31,6 +31,19 @@ function abrirCierreDiario(){
     });
   });
 
+  /* Stock restante actual */
+  const stockRestante = (window.DB.products || [])
+    .map(p => ({
+      nombre: p.nombre,
+      stock: calc(p).stock,
+      unidad: p.unidadVenta || 'u'
+    }))
+    .filter(p => p.stock > 0)
+    .sort((a, b) => a.stock - b.stock);
+
+  /* Número del registro: fecha compacta YYYYMMDD */
+  const numeroRegistro = hoy.replace(/-/g, '');
+
   const top5 = Object.entries(productosVendidos)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
@@ -53,6 +66,7 @@ function abrirCierreDiario(){
         <button class="x" id="cie-close">✕</button>
         <h2>📊 Cierre del día</h2>
         <div class="sub">${labelDay(hoy)} · ${ticketsHoy.length} factura${ticketsHoy.length !== 1 ? 's' : ''}</div>
+        <div class="cierre-numero">Registro Nº ${numeroRegistro}</div>
 
         ${cierreGuardado ? `
           <div class="cierre-guardado">
@@ -108,6 +122,25 @@ function abrirCierreDiario(){
           <b>${unidadesTotales} unidades</b>
         </div>
 
+        <div class="cierre-top-title" style="margin-top:14px">
+          📋 Stock restante (${stockRestante.length} producto${stockRestante.length !== 1 ? 's' : ''})
+        </div>
+        <div class="cierre-top">
+          ${stockRestante.length ? stockRestante.slice(0, 10).map(p => `
+            <div class="cierre-prod-row">
+              <span class="cierre-prod-nombre">${esc(p.nombre)}</span>
+              <span class="cierre-prod-cant" style="color:${p.stock <= 3 ? 'var(--red)' : p.stock <= 10 ? 'var(--amber)' : 'var(--dim)'}">
+                ${p.stock} ${p.unidad}
+              </span>
+            </div>
+          `).join('') : '<div style="text-align:center;color:var(--dim);font-size:12px;padding:14px">Sin productos en stock</div>'}
+          ${stockRestante.length > 10 ? `
+            <div style="text-align:center;color:var(--dim);font-size:11px;padding:6px">
+              +${stockRestante.length - 10} más...
+            </div>
+          ` : ''}
+        </div>
+
         <button class="btn-main" id="cie-guardar" style="margin-top:14px">
           ${cierreGuardado ? '🔄 Actualizar cierre' : '✅ Cerrar el día'}
         </button>
@@ -156,7 +189,15 @@ function guardarCierreDiario(ticketsHoy){
     else if(t.pagoMovil) pagoMovil += t.total || 0;
   });
 
+  /* Snapshot del stock al momento de cerrar */
+  const stockSnapshot = (window.DB.products || []).map(p => ({
+    nombre: p.nombre,
+    stock: calc(p).stock,
+    unidad: p.unidadVenta || 'u'
+  })).filter(p => p.stock !== 0);
+
   window.DB.cierres[hoy] = {
+    numero: hoy.replace(/-/g, ''),
     fecha: hoy,
     cerradoEn: new Date().toISOString(),
     tickets: ticketsHoy.length,
@@ -164,7 +205,8 @@ function guardarCierreDiario(ticketsHoy){
     gananciaTotal,
     efectivo,
     debito,
-    pagoMovil
+    pagoMovil,
+    stockSnapshot
   };
 
   saveDB();

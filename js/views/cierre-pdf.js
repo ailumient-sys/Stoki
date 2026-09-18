@@ -1,5 +1,5 @@
 /* =========================================================
-   views/cierre-pdf.js — Exportación del cierre diario
+   views/cierre-pdf.js — Libro contable real + exportación
    ========================================================= */
 
 function abrirModalExportarCierre(){
@@ -7,23 +7,23 @@ function abrirModalExportarCierre(){
 
   const html = `
     <div class="overlay centered open" id="m-cie-export">
-      <div class="sheet" style="position:relative;max-width:420px">
+      <div class="sheet" style="position:relative;max-width:440px">
         <button class="x" id="ciexp-close">✕</button>
         <h2>📤 Exportar cierre</h2>
-        <div class="sub">Elegí qué querés incluir.</div>
+        <div class="sub">Elegí el formato y qué incluir.</div>
 
         <div class="exp-section">
-          <div class="exp-section-title">Modo</div>
+          <div class="exp-section-title">Formato</div>
           <div class="exp-toggle-row" id="ciexp-modo">
             <button class="exp-modo-btn active" data-modo="simple">
               <span class="exp-modo-icon">📄</span>
-              <span class="exp-modo-titulo">Simple</span>
-              <span class="exp-modo-sub">Resumen general</span>
+              <span class="exp-modo-titulo">Resumen</span>
+              <span class="exp-modo-sub">1 hoja</span>
             </button>
-            <button class="exp-modo-btn" data-modo="avanzado">
+            <button class="exp-modo-btn" data-modo="libro">
               <span class="exp-modo-icon">📚</span>
-              <span class="exp-modo-titulo">Avanzado</span>
-              <span class="exp-modo-sub">Con facturas</span>
+              <span class="exp-modo-titulo">Libro contable</span>
+              <span class="exp-modo-sub">Formal + firma</span>
             </button>
           </div>
         </div>
@@ -33,12 +33,12 @@ function abrirModalExportarCierre(){
 
           <label class="ciexp-check">
             <input type="checkbox" id="ciexp-total" checked>
-            <span>💰 Total facturado</span>
+            <span>💰 Totales del día</span>
           </label>
 
           <label class="ciexp-check">
             <input type="checkbox" id="ciexp-metodos" checked>
-            <span>💳 Desglose por método de pago</span>
+            <span>💳 Desglose por método</span>
           </label>
 
           <label class="ciexp-check">
@@ -47,13 +47,18 @@ function abrirModalExportarCierre(){
           </label>
 
           <label class="ciexp-check">
-            <input type="checkbox" id="ciexp-stock" checked>
-            <span>📉 Stock descontado total</span>
+            <input type="checkbox" id="ciexp-stockrestante" checked>
+            <span>📋 Stock restante</span>
           </label>
 
-          <label class="ciexp-check" id="ciexp-check-facturas" style="opacity:.4;pointer-events:none">
-            <input type="checkbox" id="ciexp-facturas" disabled>
-            <span>🧾 Facturas individuales (solo avanzado)</span>
+          <label class="ciexp-check">
+            <input type="checkbox" id="ciexp-movimientos">
+            <span>🧾 Lista de movimientos (facturas)</span>
+          </label>
+
+          <label class="ciexp-check">
+            <input type="checkbox" id="ciexp-firma" checked>
+            <span>✍️ Línea para firma</span>
           </label>
         </div>
 
@@ -81,19 +86,9 @@ function abrirModalExportarCierre(){
       btn.classList.add('active');
 
       const modo = btn.dataset.modo;
-      const wrap = document.querySelector('#ciexp-check-facturas');
-      const input = document.querySelector('#ciexp-facturas');
-
-      if(modo === 'avanzado'){
-        wrap.style.opacity = '1';
-        wrap.style.pointerEvents = 'auto';
-        input.disabled = false;
-        input.checked = true;
-      } else {
-        wrap.style.opacity = '.4';
-        wrap.style.pointerEvents = 'none';
-        input.disabled = true;
-        input.checked = false;
+      if(modo === 'libro'){
+        document.querySelector('#ciexp-firma').checked = true;
+        document.querySelector('#ciexp-movimientos').checked = true;
       }
     });
   });
@@ -104,14 +99,19 @@ function abrirModalExportarCierre(){
       total: document.querySelector('#ciexp-total').checked,
       metodos: document.querySelector('#ciexp-metodos').checked,
       productos: document.querySelector('#ciexp-productos').checked,
-      stock: document.querySelector('#ciexp-stock').checked,
-      facturas: document.querySelector('#ciexp-facturas').checked
+      stockRestante: document.querySelector('#ciexp-stockrestante').checked,
+      movimientos: document.querySelector('#ciexp-movimientos').checked,
+      firma: document.querySelector('#ciexp-firma').checked
     };
 
     cerrar();
     setTimeout(() => generarPDFCierre(modo, incluir), 150);
   });
 }
+
+/* =========================================================
+   GENERADOR DE PDF — Libro contable
+   ========================================================= */
 
 async function generarPDFCierre(modo, incluir){
   if(typeof window.jspdf === 'undefined'){
@@ -136,11 +136,13 @@ async function generarPDFCierre(modo, incluir){
 
   const VERDE = [34, 197, 94];
   const NEGRO = [26, 26, 26];
-  const GRIS  = [130, 130, 130];
+  const GRIS  = [120, 120, 120];
   const GRIS2 = [245, 246, 248];
   const BLANCO= [255, 255, 255];
   const ROJO  = [239, 68, 68];
+  const AMBER = [245, 158, 11];
 
+  /* ── Cálculos ── */
   let totalFacturado = 0, gananciaTotal = 0;
   let efectivo = 0, debito = 0, pagoMovil = 0, otros = 0;
   let productosVendidos = {};
@@ -163,197 +165,372 @@ async function generarPDFCierre(modo, incluir){
     });
   });
 
-  /* HEADER */
+  /* Stock restante actual */
+  const stockRestante = (window.DB.products || [])
+    .map(p => ({
+      nombre: p.nombre,
+      stock: calc(p).stock,
+      unidad: p.unidadVenta || 'u'
+    }))
+    .filter(p => p.stock !== 0)
+    .sort((a, b) => a.stock - b.stock);
+
+  const numeroRegistro = hoy.replace(/-/g, '');
+  const negocio = window.DB.settings.business || {};
+  const nombreNegocio = negocio.nombre || 'Mi negocio';
+  const rifNegocio = negocio.rif || '';
+  const telNegocio = negocio.telefono || '';
+  const dirNegocio = negocio.direccion || '';
+
+  const fecha = new Date().toLocaleDateString('es-VE', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  });
+
+  /* ═══════════════════════════════════════════════════════
+     HEADER
+     ═══════════════════════════════════════════════════════ */
   doc.setFillColor(...VERDE);
-  doc.rect(0, 0, W, 22, 'F');
+  doc.rect(0, 0, W, 24, 'F');
+
   doc.setTextColor(...BLANCO);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
-  doc.text('Stoki', M, 14);
-  doc.setFontSize(14);
-  doc.text('Cierre del día', W - M, 14, { align: 'right' });
+  doc.text('Stoki', M, 12);
 
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  doc.text(modo === 'libro' ? 'Libro de caja diario' : 'Cierre del día', W - M, 12, { align: 'right' });
+
+  doc.setFontSize(9);
+  doc.text(`Nº ${numeroRegistro}`, W - M, 18, { align: 'right' });
+
+  /* Info del negocio */
   doc.setTextColor(...NEGRO);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
-  const negocio = (window.DB.settings.business || {}).nombre || 'Mi negocio';
-  doc.text(negocio, M, 32);
+  doc.text(nombreNegocio, M, 34);
+
+  let ySub = 38;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...GRIS);
+
+  if(rifNegocio){
+    doc.text('RIF: ' + rifNegocio, M, ySub);
+    ySub += 4;
+  }
+  if(telNegocio){
+    doc.text('Tel: ' + telNegocio, M, ySub);
+    ySub += 4;
+  }
+  if(dirNegocio){
+    doc.text(dirNegocio, M, ySub);
+    ySub += 4;
+  }
+
+  doc.setTextColor(...NEGRO);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text(fecha, W - M, 34, { align: 'right' });
 
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
   doc.setTextColor(...GRIS);
-  doc.setFontSize(9);
-  const fecha = new Date().toLocaleDateString('es-VE', {day:'2-digit', month:'2-digit', year:'numeric'});
-  doc.text(`${fecha} · ${ticketsHoy.length} factura${ticketsHoy.length !== 1 ? 's' : ''}`, W - M, 32, { align: 'right' });
+  doc.text(`${ticketsHoy.length} factura${ticketsHoy.length !== 1 ? 's' : ''}`, W - M, 38, { align: 'right' });
 
-  let y = 42;
+  let y = Math.max(ySub, 46) + 4;
 
-  /* TOTAL */
+  /* ═══════════════════════════════════════════════════════
+     TOTALES DEL DÍA
+     ═══════════════════════════════════════════════════════ */
   if(incluir.total){
     doc.setFillColor(...GRIS2);
-    doc.roundedRect(M, y, W - 2 * M, 26, 3, 3, 'F');
+    doc.roundedRect(M, y, W - 2 * M, 24, 3, 3, 'F');
 
     doc.setTextColor(...GRIS);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(9);
-    doc.text('TOTAL FACTURADO', M + 6, y + 8);
+    doc.setFontSize(8);
+    doc.text('TOTAL FACTURADO', M + 6, y + 7);
 
     doc.setTextColor(...VERDE);
-    doc.setFontSize(20);
-    doc.text(fmt(totalFacturado), M + 6, y + 20);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(18);
+    doc.text(fmt(totalFacturado), M + 6, y + 18);
 
     doc.setTextColor(...GRIS);
-    doc.setFontSize(9);
-    doc.text('GANANCIA', W - M - 6, y + 8, { align: 'right' });
+    doc.setFontSize(8);
+    doc.text('GANANCIA', W - M - 6, y + 7, { align: 'right' });
 
     doc.setTextColor(...(gananciaTotal >= 0 ? VERDE : ROJO));
-    doc.setFontSize(16);
-    doc.text((gananciaTotal >= 0 ? '+' : '') + fmt(gananciaTotal), W - M - 6, y + 20, { align: 'right' });
+    doc.setFontSize(14);
+    doc.text((gananciaTotal >= 0 ? '+' : '') + fmt(gananciaTotal), W - M - 6, y + 18, { align: 'right' });
 
-    y += 32;
+    y += 30;
   }
 
-  /* MÉTODOS */
-  if(incluir.metodos){
+  /* ═══════════════════════════════════════════════════════
+     MOVIMIENTOS (solo libro)
+     ═══════════════════════════════════════════════════════ */
+  if(incluir.movimientos){
     doc.setTextColor(...NEGRO);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text('Métodos de pago', M, y);
+    doc.text('Movimientos del día', M, y);
     y += 6;
 
-    const metodos = [
-      ['Efectivo', efectivo],
-      ['Débito', debito],
-      ['Pago Móvil', pagoMovil],
-      ['Otros', otros]
-    ];
-
-    metodos.forEach(([label, monto]) => {
-      if(monto <= 0) return;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...GRIS);
-      doc.text(label, M + 2, y + 4);
-
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(...NEGRO);
-      doc.text(fmt(monto), W - M - 2, y + 4, { align: 'right' });
-      y += 7;
-    });
-
-    y += 4;
-  }
-
-  /* PRODUCTOS */
-  if(incluir.productos){
-    doc.setTextColor(...NEGRO);
+    /* Header tabla */
+    doc.setFillColor(...VERDE);
+    doc.rect(M, y, W - 2 * M, 7, 'F');
+    doc.setTextColor(...BLANCO);
+    doc.setFontSize(7.5);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
-    doc.text('Productos vendidos', M, y);
-    y += 6;
+    doc.text('HORA', M + 3, y + 4.5);
+    doc.text('COMPROBANTE', M + 22, y + 4.5);
+    doc.text('CLIENTE', M + 55, y + 4.5);
+    doc.text('MÉTODO', M + 105, y + 4.5);
+    doc.text('MONTO', W - M - 3, y + 4.5, { align: 'right' });
+    y += 7;
 
-    const lista = Object.entries(productosVendidos).sort((a, b) => b[1] - a[1]);
+    const ordenados = [...ticketsHoy].sort((a, b) => a.fecha < b.fecha ? -1 : 1);
 
-    lista.forEach(([nombre, cant]) => {
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+
+    ordenados.forEach((t, i) => {
       if(y > H - 30){
         doc.addPage();
         y = 20;
       }
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...NEGRO);
-      const nc = nombre.length > 45 ? nombre.slice(0, 45) + '…' : nombre;
-      doc.text(nc, M + 2, y + 4);
 
-      doc.setFont('helvetica', 'bold');
+      if(i % 2 === 0){
+        doc.setFillColor(250, 250, 250);
+        doc.rect(M, y, W - 2 * M, 6, 'F');
+      }
+
+      const hora = t.fecha.slice(11, 16);
+      doc.setTextColor(...NEGRO);
+      doc.text(hora, M + 3, y + 4);
+
+      doc.text((t.numero || '').slice(0, 14), M + 22, y + 4);
+
+      const cliente = (t.clienteNombre || '—').slice(0, 22);
+      doc.text(cliente, M + 55, y + 4);
+
+      let metodo = 'Otro';
+      if(t.efectivo) metodo = 'Efectivo';
+      else if(t.debito) metodo = 'Débito';
+      else if(t.pagoMovil) metodo = 'P. Móvil';
+
       doc.setTextColor(...GRIS);
-      doc.text(`${cant} u`, W - M - 2, y + 4, { align: 'right' });
+      doc.text(metodo, M + 105, y + 4);
+
+      doc.setTextColor(...NEGRO);
+      doc.setFont('helvetica', 'bold');
+      doc.text(fmt(t.total), W - M - 3, y + 4, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+
       y += 6;
     });
 
     y += 4;
   }
 
-  /* STOCK */
-  if(incluir.stock){
-    doc.setFillColor(...GRIS2);
-    doc.roundedRect(M, y, W - 2 * M, 12, 3, 3, 'F');
+  /* ═══════════════════════════════════════════════════════
+     RESUMEN POR MÉTODO
+     ═══════════════════════════════════════════════════════ */
+  if(incluir.metodos){
+    if(y > H - 60){
+      doc.addPage();
+      y = 20;
+    }
 
     doc.setTextColor(...NEGRO);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
-    doc.text('Stock descontado total', M + 6, y + 8);
+    doc.text('Resumen por método de pago', M, y);
+    y += 8;
 
+    const metodos = [
+      ['Efectivo', efectivo],
+      ['Débito', debito],
+      ['Pago Móvil', pagoMovil],
+      ['Otros', otros]
+    ].filter(([_, monto]) => monto > 0);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+
+    metodos.forEach(([label, monto]) => {
+      doc.setTextColor(...NEGRO);
+      doc.text(label, M + 3, y);
+
+      doc.setTextColor(...GRIS);
+      doc.text('..............', M + 30, y);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NEGRO);
+      doc.text(fmt(monto), W - M - 3, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+
+      y += 6;
+    });
+
+    /* Línea y total */
+    doc.setDrawColor(...VERDE);
+    doc.setLineWidth(0.4);
+    doc.line(M, y, W - M, y);
+    y += 5;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(...NEGRO);
+    doc.text('TOTAL', M + 3, y);
     doc.setTextColor(...VERDE);
-    doc.text(`${unidadesTotales} unidades`, W - M - 6, y + 8, { align: 'right' });
+    doc.setFontSize(13);
+    doc.text(fmt(totalFacturado), W - M - 3, y, { align: 'right' });
 
-    y += 18;
+    y += 12;
   }
 
-  /* FACTURAS */
-  if(incluir.facturas && modo === 'avanzado'){
-    doc.addPage();
-    y = 20;
+  /* ═══════════════════════════════════════════════════════
+     ANÁLISIS DEL DÍA
+     ═══════════════════════════════════════════════════════ */
+  if(incluir.productos){
+    if(y > H - 80){
+      doc.addPage();
+      y = 20;
+    }
 
     doc.setTextColor(...NEGRO);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text('Facturas del día', M, y);
-    y += 10;
+    doc.setFontSize(10);
+    doc.text('Análisis del día', M, y);
+    y += 8;
 
-    const ordenadas = [...ticketsHoy].sort((a, b) => a.fecha < b.fecha ? -1 : 1);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
 
-    ordenadas.forEach((t, idx) => {
-      if(y > H - 40){
+    const ticketPromedio = ticketsHoy.length > 0 ? totalFacturado / ticketsHoy.length : 0;
+    const margenPct = totalFacturado > 0 ? (gananciaTotal / totalFacturado) * 100 : 0;
+
+    const metricas = [
+      ['Tickets emitidos', String(ticketsHoy.length)],
+      ['Unidades vendidas', String(unidadesTotales)],
+      ['Ticket promedio', fmt(ticketPromedio)],
+      ['Margen sobre ventas', margenPct.toFixed(1) + '%']
+    ];
+
+    metricas.forEach(([label, valor]) => {
+      doc.setTextColor(...GRIS);
+      doc.text(label, M + 3, y);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...NEGRO);
+      doc.text(valor, W - M - 3, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      y += 6;
+    });
+
+    y += 4;
+
+    /* Productos vendidos */
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...NEGRO);
+    doc.setFontSize(10);
+    doc.text('Productos vendidos', M, y);
+    y += 6;
+
+    const lista = Object.entries(productosVendidos).sort((a, b) => b[1] - a[1]);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+
+    lista.forEach(([nombre, cant]) => {
+      if(y > H - 30){
+        doc.addPage();
+        y = 20;
+      }
+      doc.setTextColor(...NEGRO);
+      const nc = nombre.length > 55 ? nombre.slice(0, 55) + '…' : nombre;
+      doc.text('· ' + nc, M + 3, y);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...GRIS);
+      doc.text(cant + ' u', W - M - 3, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+
+      y += 5;
+    });
+
+    y += 4;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     STOCK RESTANTE
+     ═══════════════════════════════════════════════════════ */
+  if(incluir.stockRestante && stockRestante.length){
+    if(y > H - 60){
+      doc.addPage();
+      y = 20;
+    }
+
+    doc.setTextColor(...NEGRO);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('Inventario restante', M, y);
+    y += 8;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+
+    stockRestante.forEach(p => {
+      if(y > H - 20){
         doc.addPage();
         y = 20;
       }
 
-      doc.setFillColor(...VERDE);
-      doc.rect(M, y, W - 2 * M, 8, 'F');
+      const esBajo = p.stock <= 3;
+      const esMedio = p.stock > 3 && p.stock <= 10;
 
-      doc.setTextColor(...BLANCO);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.text(t.numero || `#${idx + 1}`, M + 3, y + 5.5);
-
-      const hora = t.fecha.slice(11, 16);
-      doc.text(hora, W - M - 3, y + 5.5, { align: 'right' });
-
-      y += 10;
-
-      if(t.clienteNombre){
-        doc.setTextColor(...GRIS);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(8);
-        doc.text(`Cliente: ${t.clienteNombre}`, M + 3, y);
-        y += 5;
-      }
-
-      doc.setFontSize(8);
-      (t.items || []).forEach(it => {
-        if(y > H - 20){
-          doc.addPage();
-          y = 20;
-        }
-        doc.setTextColor(...NEGRO);
-        doc.setFont('helvetica', 'normal');
-        const nombre = (it.nombre || '—').slice(0, 40);
-        doc.text(`  ${it.cantidad}x ${nombre}`, M + 3, y);
-
-        doc.setFont('helvetica', 'bold');
-        doc.text(fmt(it.cantidad * it.precioUnitario), W - M - 3, y, { align: 'right' });
-        y += 4.5;
-      });
+      doc.setTextColor(...(esBajo ? ROJO : esMedio ? AMBER : NEGRO));
+      const nc = p.nombre.length > 50 ? p.nombre.slice(0, 50) + '…' : p.nombre;
+      doc.text('· ' + nc, M + 3, y);
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(...VERDE);
-      doc.text(`Total: ${fmt(t.total)}`, W - M - 3, y + 2, { align: 'right' });
-      y += 10;
+      doc.text(p.stock + ' ' + p.unidad, W - M - 3, y, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+
+      y += 5;
     });
+
+    y += 4;
   }
 
-  /* FOOTER */
+  /* ═══════════════════════════════════════════════════════
+     FIRMA
+     ═══════════════════════════════════════════════════════ */
+  if(incluir.firma){
+    if(y > H - 50){
+      doc.addPage();
+      y = 20;
+    }
+
+    y += 8;
+
+    doc.setDrawColor(...NEGRO);
+    doc.setLineWidth(0.3);
+    doc.line(M + 20, y + 18, W - M - 20, y + 18);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...GRIS);
+    doc.text('Firma del responsable', W / 2, y + 24, { align: 'center' });
+
+    y += 30;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     FOOTER en cada página
+     ═══════════════════════════════════════════════════════ */
   const totalPags = doc.internal.getNumberOfPages();
   for(let i = 1; i <= totalPags; i++){
     doc.setPage(i);
@@ -362,13 +539,13 @@ async function generarPDFCierre(modo, incluir){
     doc.line(M, H - 12, W - M, H - 12);
 
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFontSize(7.5);
     doc.setTextColor(...GRIS);
-    doc.text('Generado con Stoki', M, H - 6);
-    doc.text(`Página ${i} de ${totalPags}`, W - M, H - 6, { align: 'right' });
+    doc.text('Generado con Stoki · Registro Nº ' + numeroRegistro, M, H - 6);
+    doc.text('Página ' + i + ' de ' + totalPags, W - M, H - 6, { align: 'right' });
   }
 
-  const nombreArchivo = `Cierre-${hoy}.pdf`;
+  const nombreArchivo = `Cierre-${numeroRegistro}.pdf`;
   previsualizarPDF(doc, nombreArchivo, 'Cierre');
 
   if(navigator.vibrate) navigator.vibrate(20);

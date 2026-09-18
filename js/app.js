@@ -563,6 +563,34 @@ async function init(){
     console.warn('[init] aplicarApariencia falló:', e);
   }
 
+  /* Verificar licencia */
+  try{
+    if(typeof verificarLicencia === 'function'){
+      await verificarLicencia();
+      console.log('[Licencia]', window.STOKI_LIC);
+
+      if(!window.STOKI_LIC.activa){
+        if(typeof mostrarPantallaBloqueo === 'function'){
+          mostrarPantallaBloqueo();
+        }
+      } else if(window.STOKI_LIC.trial){
+        if(typeof mostrarPantallaActivacion === 'function'){
+          setTimeout(() => {
+            try{
+              const visto = sessionStorage.getItem('lic_pantalla_vista');
+              if(!visto){
+                mostrarPantallaActivacion();
+                sessionStorage.setItem('lic_pantalla_vista', '1');
+              }
+            }catch(e){}
+          }, 1500);
+        }
+      }
+    }
+  }catch(e){
+    console.warn('[init] verificarLicencia falló:', e);
+  }
+
   safeInit('loadSession', () => loadSession());
   safeInit('loadCarrito', () => loadCarrito());
 

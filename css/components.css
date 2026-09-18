@@ -850,3 +850,151 @@ input[type=date]{ color-scheme:dark; }
   flex: 0 0 auto; accent-color: var(--green);
   cursor: pointer; margin: 0; padding: 0;
 }
+
+
+/* =========================================================
+   LICENCIA — overlay + card
+   ========================================================= */
+.lic-overlay{
+  position: fixed;
+  inset: 0;
+  background: #0f1115;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.lic-card{
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px 22px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.lic-icon{ font-size: 56px; margin-bottom: 8px; }
+
+.lic-card h2{
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--txt);
+  letter-spacing: -.3px;
+}
+
+.lic-sub{
+  font-size: 13px;
+  color: var(--dim);
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+
+.lic-trial{
+  background: rgba(34,197,94,.12);
+  color: var(--green);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  margin-bottom: 14px;
+}
+
+.lic-device-row{
+  display: flex;
+  gap: 8px;
+  background: var(--bg3);
+  border-radius: 10px;
+  padding: 8px;
+  margin-bottom: 14px;
+}
+
+.lic-device-id{
+  flex: 1;
+  min-width: 0;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  color: var(--txt);
+  padding: 8px 6px;
+  text-align: left;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.lic-device-copy{
+  background: var(--bg4);
+  border: 0;
+  color: var(--txt);
+  width: 38px;
+  flex: 0 0 auto;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.lic-card textarea{
+  width: 100%;
+  background: var(--bg3);
+  border: 1.5px solid transparent;
+  border-radius: 10px;
+  color: var(--txt);
+  padding: 12px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  outline: none;
+  resize: none;
+  min-height: 70px;
+}
+
+.lic-card textarea:focus{ border-color: var(--green); }
+
+.lic-card label{
+  display: block;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin: 14px 0 6px;
+}
+
+.lic-error{
+  background: rgba(239,68,68,.12);
+  color: var(--red);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 800;
+  margin-top: 12px;
+  text-align: center;
+}
+
+body.lic-bloqueada header,
+body.lic-bloqueada .views,
+body.lic-bloqueada .bottom-nav,
+body.lic-bloqueada .fab,
+body.lic-bloqueada .cart-fab,
+body.lic-bloqueada .toast{
+  display: none !important;
+}
+
+
+.cierre-numero{
+  display: inline-block;
+  background: rgba(34,197,94,.12);
+  color: var(--green);
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .5px;
+  margin-top: 4px;
+}
