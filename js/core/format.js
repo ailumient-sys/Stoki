@@ -42,11 +42,15 @@ function fmtShort(n){
 function fmtRef(n, tasaOverride){
   n = Number(n) || 0;
 
+  const principal = window.DB.settings.currency || 'USD';
+  const refCur = window.DB.settings.refCurrency || 'VES';
+
+  /* Si la moneda principal es la misma que la de referencia, no mostrar dual */
+  if(principal === refCur) return null;
+
   const tasa = (typeof tasaOverride === 'number' && !isNaN(tasaOverride))
     ? tasaOverride
     : (Number(window.DB.settings.tasaDia) || 0);
-
-  const refCur = window.DB.settings.refCurrency || 'VES';
 
   if(tasa <= 0) return null;   /* sin tasa: no mostrar */
 

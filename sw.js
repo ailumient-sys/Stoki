@@ -2,7 +2,7 @@
    sw.js — Caché offline
    ========================================================= */
 
-const CACHE = 'stoki-v73';
+const CACHE = 'stoki-v74';
 
 const ASSETS = [
   './',

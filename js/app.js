@@ -291,7 +291,21 @@ function initGlobalEvents(){
   const cur = $('#currency');
   if(cur){
     cur.addEventListener('change', e => {
-      window.DB.settings.currency = e.target.value;
+      const nueva = e.target.value;
+      const anterior = window.DB.settings.currency;
+
+      window.DB.settings.currency = nueva;
+
+      /* Si la nueva moneda coincide con la de referencia, cambiarla automáticamente */
+      if(window.DB.settings.refCurrency === nueva){
+        const todas = ['USD','VES','COP','ARS','MXN','PEN','CLP','EUR'];
+        const alternativa = todas.find(c => c !== nueva) || 'USD';
+        window.DB.settings.refCurrency = alternativa;
+        setTimeout(() => {
+          toast(`💱 Referencia cambiada a ${alternativa}`);
+        }, 400);
+      }
+
       saveDB();
       renderAll();
       if(typeof updateTasaLabels === 'function') updateTasaLabels();
@@ -374,8 +388,30 @@ function updateTasaLabels(){
   const refEl = $('#tasa-ref');
   if(!refEl) return;
 
-  const ref = refEl.value;
   const principal = window.DB.settings.currency || 'USD';
+
+  /* Ocultar la moneda principal de las opciones de referencia */
+  Array.from(refEl.options).forEach(opt => {
+    if(opt.value === principal){
+      opt.disabled = true;
+      opt.style.display = 'none';
+    } else {
+      opt.disabled = false;
+      opt.style.display = '';
+    }
+  });
+
+  /* Si la actual está bloqueada, cambiar a la primera disponible */
+  if(refEl.value === principal){
+    const disponible = Array.from(refEl.options).find(o => !o.disabled);
+    if(disponible){
+      refEl.value = disponible.value;
+      window.DB.settings.refCurrency = disponible.value;
+      saveDB();
+    }
+  }
+
+  const ref = refEl.value;
 
   const nombres = {
     USD:'USD $', VES:'Bs', COP:'COP $', ARS:'ARS $',
