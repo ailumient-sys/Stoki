@@ -221,7 +221,7 @@ function abrirFiltroInventario(){
   `).join('');
 
   const html = `
-    <div class="overlay" id="m-inv-filtro">
+    <div class="overlay centered open" id="m-inv-filtro">
       <div class="sheet" style="position:relative">
         <div class="sheet-handle"></div>
         <button class="x" id="invf-close">✕</button>
