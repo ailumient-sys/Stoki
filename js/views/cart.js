@@ -417,12 +417,14 @@ function cartModificar(idx, delta){
   saveCarrito();
   renderCartList();
   updateCartFab();
+  if(typeof actualizarTodosLosBadges === 'function') actualizarTodosLosBadges();
 }
 
 function cartEliminar(idx){
   window.CARRITO.items.splice(idx, 1);
   saveCarrito();
   updateCartFab();
+  if(typeof actualizarTodosLosBadges === 'function') actualizarTodosLosBadges();
 
   if(!window.CARRITO.items.length){
     closeCartModal();
@@ -445,6 +447,7 @@ async function vaciarCarrito(){
 
   clearCarrito();
   updateCartFab();
+  if(typeof actualizarTodosLosBadges === 'function') actualizarTodosLosBadges();
   closeCartModal();
   toast('🗑️ Carrito vaciado');
 }

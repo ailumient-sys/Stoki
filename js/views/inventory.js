@@ -428,13 +428,7 @@ function bindInventarioEvents(){
     });
   }
 
-  const btnFiltro = $('#inv-filter-btn');
-  if(btnFiltro){
-    btnFiltro.addEventListener('click', e => {
-      e.stopPropagation();
-      abrirFiltroInventario();
-    });
-  }
+  /* El bind del filtro ahora se hace por event delegation global (más abajo) */
 
   document.querySelectorAll('.inv-corazon').forEach(cor => {
     cor.addEventListener('click', e => {
@@ -519,3 +513,21 @@ function toggleFavorito(id){
   renderInventario();
   toast(p.favorito ? '❤️ Marcado como favorito' : '🤍 Favorito quitado');
     }
+
+
+/* =========================================================
+   FILTRO DE INVENTARIO — Event delegation global
+   Funciona sin importar cuándo se cree el botón
+   ========================================================= */
+document.addEventListener('click', e => {
+  const btn = e.target.closest('#inv-filter-btn');
+  if(!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
+
+  if(typeof abrirFiltroInventario === 'function'){
+    abrirFiltroInventario();
+  } else {
+    console.warn('[Filtro] abrirFiltroInventario no definida');
+  }
+}, true);

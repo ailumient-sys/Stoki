@@ -276,7 +276,17 @@ function confirmarVenta(){
   });
 
   saveDB();
+
+  /* Limpiar carrito después de confirmar la venta del carrito */
+  if(ps.tipo === 'cart'){
+    if(typeof clearCarrito === 'function') clearCarrito();
+    if(typeof updateCartFab === 'function') updateCartFab();
+  }
+
   renderAll();
+
+  /* Forzar actualización de badges en Vender */
+  if(typeof actualizarTodosLosBadges === 'function') actualizarTodosLosBadges();
 
   closeModal('#m-confirm-sale');
   toast(`✅ Ticket ${numero} registrado`);

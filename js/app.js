@@ -233,88 +233,19 @@ function initFab(){
   });
 }
 
-/* FAB movible: solo para el botón "+" de Inventario */
+/* FAB de Inventario: posición fija por CSS (sin drag, posición controlada) */
 function initFabMovible(){
-  const fab = document.querySelector('#fab');
-  if(!fab) return;
-
-  /* Cargar posición guardada */
   try{
-    const pos = JSON.parse(localStorage.getItem('stoki_fab_pos') || 'null');
-    if(pos && typeof pos.x === 'number' && typeof pos.y === 'number'){
-      fab.style.left = pos.x + 'px';
-      fab.style.top  = pos.y + 'px';
-      fab.style.right  = 'auto';
-      fab.style.bottom = 'auto';
-    }
+    localStorage.removeItem('stoki_fab_pos');
   }catch(e){}
 
-  let dragging = false;
-  let moved = false;
-  let startX = 0, startY = 0;
-  let startLeft = 0, startTop = 0;
-
-  const onStart = e => {
-    const t = e.touches ? e.touches[0] : e;
-    startX = t.clientX;
-    startY = t.clientY;
-
-    const rect = fab.getBoundingClientRect();
-    startLeft = rect.left;
-    startTop  = rect.top;
-
-    dragging = true;
-    moved = false;
-  };
-
-  const onMove = e => {
-    if(!dragging) return;
-    const t = e.touches ? e.touches[0] : e;
-    const dx = t.clientX - startX;
-    const dy = t.clientY - startY;
-
-    if(Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
-
-    fab.style.left   = (startLeft + dx) + 'px';
-    fab.style.top    = (startTop + dy) + 'px';
-    fab.style.right  = 'auto';
-    fab.style.bottom = 'auto';
-
-    if(e.cancelable) e.preventDefault();
-  };
-
-  const onEnd = () => {
-    if(!dragging) return;
-    dragging = false;
-
-    if(moved){
-      const rect = fab.getBoundingClientRect();
-      const margen = 8;
-      const navH = 80;
-
-      const maxX = window.innerWidth  - rect.width  - margen;
-      const maxY = window.innerHeight - rect.height - navH;
-
-      let x = Math.max(margen, Math.min(maxX, rect.left));
-      let y = Math.max(margen, Math.min(maxY, rect.top));
-
-      fab.style.left = x + 'px';
-      fab.style.top  = y + 'px';
-
-      try{
-        localStorage.setItem('stoki_fab_pos', JSON.stringify({ x, y }));
-      }catch(e){}
-
-      /* Evitar que dispare el click */
-      fab._skipClick = true;
-      setTimeout(() => { fab._skipClick = false; }, 350);
-    }
-  };
-
-  fab.addEventListener('touchstart', onStart, { passive: true });
-  fab.addEventListener('touchmove',  onMove,  { passive: false });
-  fab.addEventListener('touchend',   onEnd);
-  fab.addEventListener('touchcancel',onEnd);
+  const fab = document.querySelector('#fab');
+  if(fab){
+    fab.style.left = '';
+    fab.style.top = '';
+    fab.style.right = '';
+    fab.style.bottom = '';
+  }
 }
 
 function initGlobalEvents(){

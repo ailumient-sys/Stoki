@@ -268,6 +268,13 @@ function bindProductosEvents(){
   });
 }
 
+/* Actualiza TODOS los badges del grid de Vender (post venta / quitar) */
+function actualizarTodosLosBadges(){
+  document.querySelectorAll('.pv-item[data-add]').forEach(el => {
+    actualizarBadgeProducto(el.dataset.add);
+  });
+}
+
 /* Actualiza SOLO el badge del producto en el grid (sin re-renderizar todo) */
 function actualizarBadgeProducto(productoId){
   const item = document.querySelector(`.pv-item[data-add="${productoId}"]`);

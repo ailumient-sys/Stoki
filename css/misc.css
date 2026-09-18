@@ -64,10 +64,13 @@
 
 /* --- FAB principal (Inventario) --- */
 .fab{
-  position:fixed;
-  right:18px;
-  bottom:calc(var(--nav-h) + 20px + var(--safe-bottom));
-  width:56px; height:56px;
+  position:fixed !important;
+  right:18px !important;
+  left:auto !important;
+  bottom:calc(var(--nav-h) + 20px + var(--safe-bottom)) !important;
+  top:auto !important;
+  width:56px;
+  height:56px;
   border-radius:50%;
   background:var(--green);
   color:#04140a;
