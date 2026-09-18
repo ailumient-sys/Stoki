@@ -197,7 +197,8 @@ function buildInventarioToolbar(){
         ${invBusqueda ? `<button class="inv-search-clear" id="inv-search-clear">✕</button>` : ''}
       </div>
 
-      <button class="inv-filter-btn" id="inv-filter-btn" type="button">
+      <button class="inv-filter-btn" id="inv-filter-btn" type="button"
+              onclick="event.preventDefault(); event.stopPropagation(); abrirFiltroInventario();">
         <span class="inv-filter-icon">🔽</span>
         <span class="inv-filter-label">${ordenActual.label}</span>
         <span class="inv-filter-chevron">▾</span>
@@ -519,6 +520,9 @@ function toggleFavorito(id){
    FILTRO DE INVENTARIO — Event delegation global
    Funciona sin importar cuándo se cree el botón
    ========================================================= */
+/* Exponer la función globalmente para que funcione el onclick inline */
+window.abrirFiltroInventario = abrirFiltroInventario;
+
 document.addEventListener('click', e => {
   const btn = e.target.closest('#inv-filter-btn');
   if(!btn) return;
