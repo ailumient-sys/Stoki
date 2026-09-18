@@ -10,6 +10,27 @@ let invModoOrden = 'recientes';
 let invBusqueda  = '';
 let invCatsExpandidas = {};  /* { catId: true/false } */
 
+const INV_ORDENES = [
+  { key: 'recientes',   label: '🕐 Más recientes' },
+  { key: 'az',          label: '🔤 Alfabético (A-Z)' },
+  { key: 'za',          label: '🔤 Alfabético (Z-A)' },
+  { key: 'precio-asc',  label: '💵 Menor precio' },
+  { key: 'precio-desc', label: '💵 Mayor precio' },
+  { key: 'stock-asc',   label: '📉 Menor stock' },
+  { key: 'stock-desc',  label: '📈 Mayor stock' },
+  { key: 'alerta',      label: '⚠️ Alertas primero' },
+  { key: 'favoritos',   label: '❤️ Solo favoritos' }
+];
+
+(function(){
+  try{
+    const guardado = localStorage.getItem('stoki_inv_orden');
+    if(guardado && INV_ORDENES.find(o => o.key === guardado)){
+      invModoOrden = guardado;
+    }
+  }catch(e){}
+})();
+
 function renderInventario(){
   const cont = $('#v-inv');
   if(!cont) return;
@@ -134,13 +155,7 @@ function buildInventarioToolbar(){
     ? `<div class="inv-counter">${mostrados} resultado${mostrados !== 1 ? 's' : ''}</div>`
     : '';
 
-  const chips = [
-    { key:'recientes', label:'🕐' },
-    { key:'az',        label:'🔤' },
-    { key:'stock',     label:'📉' },
-    { key:'alerta',    label:'⚠️' },
-    { key:'favoritos', label:'❤️' }
-  ];
+  const ordenActual = INV_ORDENES.find(o => o.key === invModoOrden) || INV_ORDENES[0];
 
   return `
     <div class="inv-toolbar">
@@ -182,17 +197,63 @@ function buildInventarioToolbar(){
         ${invBusqueda ? `<button class="inv-search-clear" id="inv-search-clear">✕</button>` : ''}
       </div>
 
-      <div class="inv-chips">
-        ${chips.map(ch => `
-          <button class="inv-chip ${invModoOrden === ch.key ? 'active' : ''}"
-                  data-orden="${ch.key}">
-            ${ch.label}
-          </button>
-        `).join('')}
-      </div>
+      <button class="inv-filter-btn" id="inv-filter-btn" type="button">
+        <span class="inv-filter-icon">🔽</span>
+        <span class="inv-filter-label">${ordenActual.label}</span>
+        <span class="inv-filter-chevron">▾</span>
+      </button>
 
       ${contador}
     </div>`;
+}
+
+/* Abrir el sheet de filtros */
+function abrirFiltroInventario(){
+  if(document.querySelector('#m-inv-filtro')) return;
+
+  const opcionesHTML = INV_ORDENES.map(o => `
+    <button class="inv-filter-opt ${invModoOrden === o.key ? 'active' : ''}"
+            data-orden="${o.key}" type="button">
+      <span>${o.label}</span>
+      <span class="inv-filter-check">${invModoOrden === o.key ? '✓' : ''}</span>
+    </button>
+  `).join('');
+
+  const html = `
+    <div class="overlay" id="m-inv-filtro">
+      <div class="sheet" style="position:relative">
+        <div class="sheet-handle"></div>
+        <button class="x" id="invf-close">✕</button>
+        <h2>Ordenar productos</h2>
+        <div class="sub">Elegí cómo querés ver tu inventario.</div>
+
+        <div class="inv-filter-list">
+          ${opcionesHTML}
+        </div>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', html);
+
+  const cerrar = () => {
+    const el = document.querySelector('#m-inv-filtro');
+    if(el) el.remove();
+  };
+
+  document.querySelector('#invf-close').addEventListener('click', cerrar);
+  document.querySelector('#m-inv-filtro').addEventListener('click', e => {
+    if(e.target.id === 'm-inv-filtro') cerrar();
+  });
+
+  document.querySelectorAll('.inv-filter-opt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      invModoOrden = btn.dataset.orden;
+      try{ localStorage.setItem('stoki_inv_orden', invModoOrden); }catch(e){}
+      cerrar();
+      renderInventario();
+      if(navigator.vibrate) navigator.vibrate(10);
+    });
+  });
 }
 
 /* =========================================================
@@ -222,8 +283,16 @@ function getInventarioList(){
     switch(invModoOrden){
       case 'az':
         return a.nombre.localeCompare(b.nombre, 'es', { sensitivity:'base' });
-      case 'stock':
+      case 'za':
+        return b.nombre.localeCompare(a.nombre, 'es', { sensitivity:'base' });
+      case 'precio-asc':
+        return ca.precioVenta - cb.precioVenta;
+      case 'precio-desc':
+        return cb.precioVenta - ca.precioVenta;
+      case 'stock-asc':
         return ca.stock - cb.stock;
+      case 'stock-desc':
+        return cb.stock - ca.stock;
       case 'alerta':
         return getPrioridadAlerta(ca) - getPrioridadAlerta(cb);
       case 'recientes':
@@ -268,6 +337,8 @@ function inventoryItemHTML(p){
 
   const enRojoFin = c.saldo < 0;
   const colorFin  = enRojoFin ? 'var(--red)' : 'var(--green)';
+  const iconoFin  = enRojoFin ? '🔻' : '💰';
+  const textoFin  = enRojoFin ? 'Recuperar' : 'Ganando';
 
   const thumb = buildInvThumb(p);
   const corazon = p.favorito ? '❤️' : '🤍';
@@ -278,13 +349,19 @@ function inventoryItemHTML(p){
     ? `<span class="badge-fotos">📷 ${cantFotos}</span>`
     : '';
 
+  /* Badge stock: número con color del estado */
+  const stockBadge = `
+    <div class="inv-stock-badge" style="background:${colorStock}">
+      ${c.stock}
+    </div>`;
+
   return `
     <div class="inv-item" data-detail="${p.id}">
       <div class="inv-corazon"
            data-favorito="${p.id}"
            data-activo="${p.favorito ? '1' : '0'}">${corazon}</div>
 
-      <div class="inv-dot" style="background:${colorStock}"></div>
+      ${stockBadge}
 
       <div style="position:relative">
         ${thumb}
@@ -293,7 +370,9 @@ function inventoryItemHTML(p){
 
       <div class="inv-name">${esc(p.nombre)}</div>
 
-      <div class="inv-fin-dot" style="background:${colorFin}"></div>
+      <div class="inv-fin-badge" style="color:${colorFin}">
+        ${iconoFin} ${textoFin}
+      </div>
     </div>`;
 }
 
@@ -349,13 +428,13 @@ function bindInventarioEvents(){
     });
   }
 
-  document.querySelectorAll('.inv-chip').forEach(chip => {
-    chip.addEventListener('click', e => {
+  const btnFiltro = $('#inv-filter-btn');
+  if(btnFiltro){
+    btnFiltro.addEventListener('click', e => {
       e.stopPropagation();
-      invModoOrden = chip.dataset.orden;
-      renderInventario();
+      abrirFiltroInventario();
     });
-  });
+  }
 
   document.querySelectorAll('.inv-corazon').forEach(cor => {
     cor.addEventListener('click', e => {

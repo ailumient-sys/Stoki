@@ -216,7 +216,13 @@ function initFab(){
   const fab = $('#fab');
   if(!fab) return;
 
-  fab.addEventListener('click', () => {
+  fab.addEventListener('click', (e) => {
+    if(fab._skipClick){
+      e.stopPropagation();
+      e.preventDefault();
+      return;
+    }
+
     const accion = fab.dataset.accion || 'agregar';
 
     if(accion === 'agregar'){
@@ -225,6 +231,90 @@ function initFab(){
       if(typeof openFabMenu === 'function') openFabMenu();
     }
   });
+}
+
+/* FAB movible: solo para el botón "+" de Inventario */
+function initFabMovible(){
+  const fab = document.querySelector('#fab');
+  if(!fab) return;
+
+  /* Cargar posición guardada */
+  try{
+    const pos = JSON.parse(localStorage.getItem('stoki_fab_pos') || 'null');
+    if(pos && typeof pos.x === 'number' && typeof pos.y === 'number'){
+      fab.style.left = pos.x + 'px';
+      fab.style.top  = pos.y + 'px';
+      fab.style.right  = 'auto';
+      fab.style.bottom = 'auto';
+    }
+  }catch(e){}
+
+  let dragging = false;
+  let moved = false;
+  let startX = 0, startY = 0;
+  let startLeft = 0, startTop = 0;
+
+  const onStart = e => {
+    const t = e.touches ? e.touches[0] : e;
+    startX = t.clientX;
+    startY = t.clientY;
+
+    const rect = fab.getBoundingClientRect();
+    startLeft = rect.left;
+    startTop  = rect.top;
+
+    dragging = true;
+    moved = false;
+  };
+
+  const onMove = e => {
+    if(!dragging) return;
+    const t = e.touches ? e.touches[0] : e;
+    const dx = t.clientX - startX;
+    const dy = t.clientY - startY;
+
+    if(Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+
+    fab.style.left   = (startLeft + dx) + 'px';
+    fab.style.top    = (startTop + dy) + 'px';
+    fab.style.right  = 'auto';
+    fab.style.bottom = 'auto';
+
+    if(e.cancelable) e.preventDefault();
+  };
+
+  const onEnd = () => {
+    if(!dragging) return;
+    dragging = false;
+
+    if(moved){
+      const rect = fab.getBoundingClientRect();
+      const margen = 8;
+      const navH = 80;
+
+      const maxX = window.innerWidth  - rect.width  - margen;
+      const maxY = window.innerHeight - rect.height - navH;
+
+      let x = Math.max(margen, Math.min(maxX, rect.left));
+      let y = Math.max(margen, Math.min(maxY, rect.top));
+
+      fab.style.left = x + 'px';
+      fab.style.top  = y + 'px';
+
+      try{
+        localStorage.setItem('stoki_fab_pos', JSON.stringify({ x, y }));
+      }catch(e){}
+
+      /* Evitar que dispare el click */
+      fab._skipClick = true;
+      setTimeout(() => { fab._skipClick = false; }, 350);
+    }
+  };
+
+  fab.addEventListener('touchstart', onStart, { passive: true });
+  fab.addEventListener('touchmove',  onMove,  { passive: false });
+  fab.addEventListener('touchend',   onEnd);
+  fab.addEventListener('touchcancel',onEnd);
 }
 
 function initGlobalEvents(){
@@ -558,7 +648,7 @@ async function init(){
 
   safeInit('tasa',         () => initTasa());
   safeInit('business',     () => initBusiness());
-  safeInit('fab',          () => initFab());
+  safeInit('fab',          () => { initFab(); initFabMovible(); });
   safeInit('cart',         () => initCart());
   safeInit('invest',       () => initInvest());
   safeInit('productForm',  () => initProductForm());

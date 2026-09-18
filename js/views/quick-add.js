@@ -72,7 +72,7 @@ function iniciarCaptura(modo){
     const files = [...e.target.files];
     if(!files.length) return;
 
-    /* Si es cámara y ya hay items, seguir agregando uno a uno */
+    /* ── Modo cámara: encadenar tomas automáticamente ── */
     if(modo === 'camara'){
       for(const file of files){
         try{
@@ -88,17 +88,21 @@ function iniciarCaptura(modo){
           console.error(err);
         }
       }
-      /* Reabrir la cámara para la siguiente foto */
-      setTimeout(() => {
-        if(window.QA.items.length && !document.querySelector('#m-qa-edit')){
-          abrirQuickAddEditor();
-          setTimeout(() => iniciarCaptura('camara'), 200);
-        }
-      }, 100);
+
+      /* Asegurar que el editor esté abierto y actualizado */
+      if(!document.querySelector('#m-qa-edit')){
+        abrirQuickAddEditor();
+      } else {
+        renderQuickAddList();
+      }
+
+      /* Reabrir la cámara automáticamente para la próxima foto.
+         Si el usuario cancela la cámara (sin foto), la cadena se detiene. */
+      setTimeout(() => iniciarCaptura('camara'), 650);
       return;
     }
 
-    /* Galería: procesar todas */
+    /* ── Modo galería: procesar todas ── */
     toast(`⏳ Procesando ${files.length} foto${files.length !== 1 ? 's' : ''}...`);
 
     for(const file of files){

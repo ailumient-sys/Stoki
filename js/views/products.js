@@ -79,6 +79,7 @@ function buildToolbarVender(){
         <button class="pv-search-clear" id="pv-search-clear"
                 style="${window.pvBusqueda ? '' : 'display:none'}">✕</button>
       </div>
+      <button class="pv-scan-btn" id="pv-scan-btn" title="Escanear código">📷</button>
       <div class="pv-cols-btn" id="pv-cols-btn" title="Columnas">
         ⚙️
       </div>
@@ -212,6 +213,40 @@ function bindProductosEvents(){
   const btnCols = $('#pv-cols-btn');
   if(btnCols) btnCols.addEventListener('click', abrirMenuColumnas);
 
+  /* Botón escáner */
+  const btnScan = $('#pv-scan-btn');
+  if(btnScan){
+    btnScan.addEventListener('click', () => {
+      if(typeof openScanner !== 'function'){
+        toast('⚠️ Escáner no disponible');
+        return;
+      }
+      openScanner(code => {
+        const p = window.DB.products.find(x => x.codigoBarras === code);
+
+        if(!p){
+          toast('🔍 No hay producto con ese código');
+          return;
+        }
+
+        const c = calc(p);
+        if(c.stock <= 0){
+          toast(`⚠️ ${p.nombre} sin stock`);
+          return;
+        }
+
+        agregarAlCarrito(p.id);
+        actualizarBadgeProducto(p.id);
+
+        const el = document.querySelector(`.pv-item[data-add="${p.id}"]`);
+        if(el){
+          el.classList.add('pv-pulse');
+          setTimeout(() => el.classList.remove('pv-pulse'), 300);
+        }
+      });
+    });
+  }
+
   /* Toggle categorías */
   document.querySelectorAll('[data-toggle-cat]').forEach(h => {
     h.addEventListener('click', () => {
@@ -224,12 +259,35 @@ function bindProductosEvents(){
   /* Toque en producto */
   document.querySelectorAll('[data-add]').forEach(el => {
     el.addEventListener('click', () => {
-      agregarAlCarrito(el.dataset.add);
-      /* Animación de toque */
+      const id = el.dataset.add;
+      agregarAlCarrito(id);
+      actualizarBadgeProducto(id);
       el.classList.add('pv-pulse');
       setTimeout(() => el.classList.remove('pv-pulse'), 300);
     });
   });
+}
+
+/* Actualiza SOLO el badge del producto en el grid (sin re-renderizar todo) */
+function actualizarBadgeProducto(productoId){
+  const item = document.querySelector(`.pv-item[data-add="${productoId}"]`);
+  if(!item) return;
+
+  const enCarrito = (window.CARRITO.items || []).find(i => i.productoId === productoId);
+  const cant = enCarrito ? enCarrito.cantidad : 0;
+
+  let badge = item.querySelector('.pv-item-badge');
+
+  if(cant > 0){
+    if(!badge){
+      badge = document.createElement('span');
+      badge.className = 'pv-item-badge';
+      item.appendChild(badge);
+    }
+    badge.textContent = cant;
+  } else if(badge){
+    badge.remove();
+  }
 }
 
 /* =========================================================
