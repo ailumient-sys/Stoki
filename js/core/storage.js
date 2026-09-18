@@ -44,7 +44,8 @@ window.DB = {
   },
   ventaCounter: {},
   historialCompras: [],
-  shoppingLists: []
+  shoppingLists: [],
+  cierres: {}
 };
 
 window.SESSION      = null;

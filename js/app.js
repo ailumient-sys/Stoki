@@ -578,6 +578,7 @@ async function init(){
   safeInit('setTab', () => setTab(0));
 
   safeInit('tasa',         () => initTasa());
+  safeInit('tasaAviso',    () => initTasaAviso());
   safeInit('business',     () => initBusiness());
   safeInit('fab',          () => { initFab(); initFabMovible(); });
   safeInit('cart',         () => initCart());

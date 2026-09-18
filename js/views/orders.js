@@ -888,6 +888,14 @@ function buildComprobantePreview(c, pedidoId){
     return `<div class="ped-comprobante-badge">💵 Pago en efectivo</div>`;
   }
 
+  if(c.tipo === 'debito'){
+    return `<div class="ped-comprobante-badge" style="background:rgba(59,130,246,.14);color:#60a5fa">💳 Débito</div>`;
+  }
+
+  if(c.tipo === 'pago-movil'){
+    return `<div class="ped-comprobante-badge" style="background:rgba(59,130,246,.14);color:#60a5fa">📱 Pago Móvil</div>`;
+  }
+
   if(c.tipo === 'texto'){
     return `<div class="ped-comprobante-badge">
               📝 Ref: ${esc(c.valor || '—')}
@@ -990,6 +998,14 @@ function openComprobanteModal(pedidoId){
             <span class="icon">💵</span>
             Efectivo
           </button>
+          <button type="button" class="comprob-tipo-btn" data-tipo="debito">
+            <span class="icon">💳</span>
+            Débito
+          </button>
+          <button type="button" class="comprob-tipo-btn" data-tipo="pago-movil">
+            <span class="icon">📱</span>
+            Pago Móvil
+          </button>
           <button type="button" class="comprob-tipo-btn" data-tipo="texto">
             <span class="icon">📝</span>
             Referencia
@@ -1045,6 +1061,38 @@ function renderComprobExtra(pedidoId){
         💵 El cliente pagó en efectivo
       </div>`;
     if(btnSave) btnSave.disabled = false;
+  }
+
+  else if(comprobTipo === 'debito'){
+    cont.innerHTML = `
+      <div style="background:rgba(59,130,246,.14);border-radius:10px;
+                  padding:14px;text-align:center;margin-top:14px;
+                  font-size:13px;font-weight:800;color:#60a5fa">
+        💳 El cliente pagó con Débito
+      </div>`;
+    if(btnSave) btnSave.disabled = false;
+  }
+
+  else if(comprobTipo === 'pago-movil'){
+    const qr = (window.DB.settings.business || {}).qrPagoMovil;
+    if(qr){
+      cont.innerHTML = `
+        <div class="pm-qr-display" style="margin-top:14px">
+          <div class="pm-qr-display-label">📱 Escaneá para pagar</div>
+          <img src="${qr}" alt="QR Pago Móvil">
+        </div>`;
+      if(btnSave) btnSave.disabled = false;
+    } else {
+      cont.innerHTML = `
+        <div style="background:rgba(245,158,11,.14);border-radius:10px;
+                    padding:14px;text-align:center;margin-top:14px;
+                    font-size:13px;font-weight:800;color:var(--amber);
+                    line-height:1.5">
+          ⚠️ No configuraste tu QR de Pago Móvil.<br>
+          Andá a <b>🏪 Mi negocio</b> y cargalo.
+        </div>`;
+      if(btnSave) btnSave.disabled = true;
+    }
   }
 
   else if(comprobTipo === 'texto'){
@@ -1105,6 +1153,12 @@ async function guardarComprobante(pedidoId){
 
   if(comprobTipo === 'efectivo'){
     comprobante = { tipo: 'efectivo' };
+
+  } else if(comprobTipo === 'debito'){
+    comprobante = { tipo: 'debito' };
+
+  } else if(comprobTipo === 'pago-movil'){
+    comprobante = { tipo: 'pago-movil' };
 
   } else if(comprobTipo === 'texto'){
     const input = document.querySelector('#comp-ref-input');

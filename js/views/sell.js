@@ -162,6 +162,10 @@ function openConfirmSale(){
   const efectivoCheck = document.querySelector('#confirm-efectivo');
   if(efectivoCheck) efectivoCheck.checked = ps.efectivo || false;
 
+  /* Restaurar el check de débito */
+  const debCheck = document.querySelector('#confirm-debito');
+  if(debCheck) debCheck.checked = ps.debito || false;
+
   /* Restaurar el check de pago móvil */
   const pmCheck = document.querySelector('#confirm-pago-movil');
   if(pmCheck) pmCheck.checked = ps.pagoMovil || false;
@@ -227,6 +231,10 @@ function confirmarVenta(){
   const efectivoCheck = document.querySelector('#confirm-efectivo');
   const efectivo = efectivoCheck ? efectivoCheck.checked : false;
 
+  /* Check débito */
+  const debCheck = document.querySelector('#confirm-debito');
+  const debito = debCheck ? debCheck.checked : false;
+
   /* Check pago móvil */
   const pmCheck = document.querySelector('#confirm-pago-movil');
   const pagoMovil = pmCheck ? pmCheck.checked : false;
@@ -248,6 +256,7 @@ function confirmarVenta(){
     total: ps.total,
     ganancia: ps.ganancia,
     efectivo: efectivo,
+    debito: debito,
     pagoMovil: pagoMovil,
     tasaSnapshot: tasaSnap > 0 ? tasaSnap : null,
     refCurrencySnapshot: tasaSnap > 0 ? refSnap : null
@@ -599,6 +608,14 @@ function initSell(){
   if(efectivoCheck){
     efectivoCheck.addEventListener('change', () => {
       if(window.pendingSale) window.pendingSale.efectivo = efectivoCheck.checked;
+    });
+  }
+
+  /* Check débito */
+  const debCheck = $('#confirm-debito');
+  if(debCheck){
+    debCheck.addEventListener('change', () => {
+      if(window.pendingSale) window.pendingSale.debito = debCheck.checked;
     });
   }
 
