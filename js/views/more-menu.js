@@ -13,6 +13,7 @@ const MORE_ITEMS = [
   { action: 'apariencia', icon: '🎨', titulo: 'Apariencia',    sub: 'Cambiá el tema y fondo' },
   { action: 'backup',     icon: '🔐', titulo: 'Backup',        sub: 'Exportar / importar datos' },
   { action: 'cierre',     icon: '📊', titulo: 'Cierre del día', sub: 'Reporte diario de ventas' },
+  { action: 'restock',    icon: '📦', titulo: 'Reabastecer',   sub: 'Agregar stock de productos' },
   { tab: 8, icon: '🛒', titulo: 'Compras',        sub: 'Calculadora de compras' },
   { tab: 7, icon: '🏭', titulo: 'Proveedores',   sub: 'Datos y WhatsApp directo' }
 ];
@@ -61,6 +62,16 @@ function openMoreMenu(){
         setTimeout(() => abrirPanelBackup(), 120);
       } else if(action === 'cierre'){
         setTimeout(() => abrirCierreDiario(), 120);
+      } else if(action === 'restock'){
+        setTimeout(() => {
+          const v = document.querySelector('#v-restock');
+          if(v){
+            setTab(9);
+            if(typeof abrirRestockPage === 'function') abrirRestockPage();
+          } else {
+            toast('⚠️ Falta la vista de restock');
+          }
+        }, 120);
       } else if(tab !== undefined && tab !== ''){
         setTimeout(() => setTab(+tab), 120);
       }

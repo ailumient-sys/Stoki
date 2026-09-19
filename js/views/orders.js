@@ -551,7 +551,17 @@ function renderPnoPickerList(){
     lista = lista.filter(p => normalize(p.nombre).includes(q));
   }
 
-  lista = lista.filter(p => calc(p).stock > 0);
+  lista = lista.filter(p => {
+    /* Solo vendibles */
+    if(typeof esVendible === 'function' && !esVendible(p)) return false;
+
+    const c = calc(p);
+    const t = tipoDe(p);
+
+    if(t === 'servicio') return true;
+    if(t === 'receta') return c.stockDisponible > 0 || c.stockInfinito;
+    return c.stock > 0;
+  });
 
   if(!lista.length){
     cont.innerHTML = `
@@ -611,7 +621,8 @@ function agregarProductoAlPedido(productoId){
     pedCarrito.push({
       productoId,
       cantidad: 1,
-      precioUnitario: c.precioVenta
+      precioUnitario: c.precioVenta,
+      unidad: p.unidad || 'unidad'
     });
   }
 
@@ -647,8 +658,22 @@ function guardarNuevoPedido(){
     const p = window.DB.products.find(x => x.id === item.productoId);
     if(!p) continue;
     const c = calc(p);
-    const disponible = c.stock - getReservadoProducto(item.productoId);
+    const t = tipoDe(p);
 
+    /* Servicios: siempre ok */
+    if(t === 'servicio') continue;
+
+    /* Recetas: validar materiales */
+    if(t === 'receta'){
+      if(c.stockInfinito) continue;
+      if(c.stockDisponible < item.cantidad){
+        return toast(`⚠️ "${p.nombre}": solo alcanza para ${c.stockDisponible}`);
+      }
+      continue;
+    }
+
+    /* Productos y materiales */
+    const disponible = c.stock - getReservadoProducto(item.productoId);
     if(item.cantidad > disponible){
       return toast(`⚠️ "${p.nombre}" solo tiene ${disponible} disponibles`);
     }
@@ -1247,6 +1272,60 @@ async function cerrarPedido(pedidoId){
     const p = window.DB.products.find(x => x.id === item.productoId);
     if(!p) return;
 
+    const t = tipoDe(p);
+
+    /* Receta: registrar venta + descontar materiales */
+    if(t === 'receta'){
+      p.ventas = p.ventas || [];
+      p.ventas.push({
+        id: uid(),
+        ticketId,
+        numero,
+        cantidad: item.cantidad,
+        precioUnitario: item.precioUnitario,
+        costoUnitario: item.costoUnitario,
+        fecha: fechaISO,
+        tasaSnapshot: o.tasaSnapshot,
+        refCurrencySnapshot: o.refCurrencySnapshot,
+        cliente: o.clienteId
+      });
+
+      /* Descontar cada material (FIFO) */
+      const comps = Array.isArray(p.componentes) ? p.componentes : [];
+      const explotado = explotarComponentes(comps, 0);
+
+      explotado.forEach(comp => {
+        const mat = window.DB.products.find(x => x.id === comp.materialId);
+        if(!mat) return;
+
+        let restante = comp.cantidad * item.cantidad;
+
+        /* Aplicar FIFO sobre los lotes */
+        (mat.lotes || []).forEach(lote => {
+          if(restante <= 0) return;
+          const consumir = Math.min(restante, lote.unidadesCompradas);
+          restante -= consumir;
+
+          mat.ventas = mat.ventas || [];
+          mat.ventas.push({
+            id: uid(),
+            ticketId,
+            numero,
+            cantidad: consumir,
+            precioUnitario: 0,
+            costoUnitario: lote.costoUnitario,
+            loteId: lote.id,
+            fecha: fechaISO,
+            usoInterno: true,
+            recetaOrigen: p.nombre
+          });
+        });
+      });
+      return;
+    }
+
+    /* Productos, materiales, servicios: venta directa */
+    p.ventas = p.ventas || [];
     p.ventas.push({
       id: uid(),
       ticketId,

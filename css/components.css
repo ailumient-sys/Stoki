@@ -1003,3 +1003,21 @@ body.lic-bloqueada .toast{
 .fi-tipo-btn{background:var(--bg3);border:1.5px solid var(--line);border-radius:10px;padding:10px 6px;font-family:inherit;font-size:12px;font-weight:800;color:var(--txt);cursor:pointer;min-height:52px;transition:all .15s}
 .fi-tipo-btn:active{transform:scale(.96)}
 .fi-tipo-btn.active{background:rgba(34,197,94,.14);border-color:var(--green);color:var(--green)}
+
+.rp-list{display:flex;flex-direction:column;gap:6px}
+.rp-item{display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg3);border-radius:12px;cursor:pointer}
+.rp-emoji{font-size:22px;flex:0 0 auto}
+.rp-info{flex:1;min-width:0}
+.rp-nombre{font-size:13px;font-weight:800;color:var(--txt);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-meta{font-size:11px;font-weight:700}
+.rp-add{background:var(--green);color:#04140a;border:0;border-radius:8px;padding:8px 12px;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer;flex:0 0 auto}
+.rp-prov-list{display:flex;flex-direction:column;gap:6px}
+.rp-prov-row{display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg3);border-radius:10px;cursor:pointer;border:1.5px solid transparent}
+.rp-prov-row.selected{border-color:var(--green);background:var(--bg4)}
+.rp-prov-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;flex:0 0 auto}
+.rp-prov-info{flex:1;min-width:0}
+.rp-prov-nombre{font-size:13px;font-weight:800;color:var(--txt);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rp-prov-meta{font-size:11px;color:var(--dim);font-weight:600}
+.rp-prov-empty{padding:14px;text-align:center;font-size:12px;color:var(--dim);background:var(--bg3);border-radius:10px}
+.rp-prov-nuevo{background:rgba(34,197,94,.12);border:1px dashed var(--green);border-radius:10px;padding:10px;color:var(--green);font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;width:100%;margin-top:4px}
+.rst-unidad{background:var(--bg4);color:var(--txt);border-radius:8px;padding:0 14px;display:flex;align-items:center;font-size:13px;font-weight:800;min-height:44px}

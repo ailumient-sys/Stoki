@@ -38,6 +38,11 @@ function openAddForm(){
 
 function openEditForm(id){
   if(typeof abrirFormItem === 'function'){
+    const p = window.DB.products.find(x => x.id === id);
+    if(p){
+      const t = (typeof tipoDe === 'function') ? tipoDe(p) : 'producto';
+      return abrirFormItem(t, id);
+    }
     return abrirFormItem('producto', id);
   }
   /* Fallback: código viejo */

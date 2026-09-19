@@ -15,8 +15,24 @@ function renderProductos(){
   try {
     todos = Array.isArray(window.DB.products) ? window.DB.products : [];
     conStock = todos.filter(p => {
-      try { return calc(p).stock > 0; }
-      catch(e) { console.warn('[Vender] calc falló:', p && p.nombre, e); return false; }
+      try {
+        /* Solo vendibles */
+        if(typeof esVendible === 'function' && !esVendible(p)) return false;
+
+        const c = calc(p);
+
+        /* Servicios siempre vendibles */
+        if(c.tipo === 'servicio') return true;
+
+        /* Recetas: si tiene stock suficiente o infinito */
+        if(c.tipo === 'receta') return (c.stockDisponible > 0) || c.stockInfinito;
+
+        /* Productos y materiales: stock normal */
+        return c.stock > 0;
+      } catch(e) {
+        console.warn('[Vender] calc falló:', p && p.nombre, e);
+        return false;
+      }
     });
   } catch(e){
     cont.innerHTML = '<div class="empty"><div class="ico">⚠️</div><h3>Error al cargar productos</h3><p style="font-size:11px;word-break:break-all;padding:0 20px">' + esc(e && e.message ? e.message : String(e)) + '</p><p style="font-size:11px;margin-top:8px;color:var(--dim)">Productos en DB: ' + (window.DB.products || []).length + '</p></div>';

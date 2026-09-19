@@ -42,9 +42,9 @@ function calcProducto(p){
   const stockBruto = lotes.reduce((s, l) => s + l.unidadesRestantes, 0);
 
   /* Reservas por pedidos activos */
-  const reservado = (typeof getReservadoProducto === 'function')
-    ? getReservadoProducto(p.id)
-    : 0;
+  const reservado = (typeof getReservadoProductoTotal === 'function')
+    ? getReservadoProductoTotal(p.id)
+    : ((typeof getReservadoProducto === 'function') ? getReservadoProducto(p.id) : 0);
 
   const stock = Math.max(0, stockBruto - reservado);
 
@@ -495,4 +495,45 @@ function getComparativa(lotes){
     },
     promedio: unidadesTotal > 0 ? costoTotal / unidadesTotal : 0
   };
+}
+
+/* =========================================================
+   RESERVA DE MATERIALES POR PEDIDOS
+   Cuando un pedido activo contiene recetas, sus materiales
+   quedan reservados hasta cerrarlo.
+   ========================================================= */
+function getReservadoMaterial(materialId){
+  let reservado = 0;
+
+  (window.DB.orders || []).forEach(o => {
+    if(o.estado !== 'activo') return;
+
+    (o.items || []).forEach(item => {
+      /* Si el item es una receta, mirar sus componentes */
+      const p = window.DB.products.find(x => x.id === item.productoId);
+      if(!p) return;
+      if(tipoDe(p) !== 'receta') return;
+
+      const comps = Array.isArray(p.componentes) ? p.componentes : [];
+      comps.forEach(comp => {
+        const explotado = explotarComponentes([comp], 0);
+        explotado.forEach(e => {
+          if(e.materialId === materialId){
+            reservado += e.cantidad * (item.cantidad || 0);
+          }
+        });
+      });
+    });
+  });
+
+  return reservado;
+}
+
+/* Override de getReservadoProducto: suma reservas directas + por recetas */
+function getReservadoProductoTotal(productoId){
+  const directo = (typeof getReservadoProducto === 'function')
+    ? getReservadoProducto(productoId)
+    : 0;
+  const porReceta = getReservadoMaterial(productoId);
+  return directo + porReceta;
 }
