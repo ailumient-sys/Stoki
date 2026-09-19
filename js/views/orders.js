@@ -1507,7 +1507,10 @@ function renderCitasInterno(cont, tabs){
   }
 
   const btnNuevo = `
-    <button class="btn-nuevo-pedido" id="cita-nueva" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff">
+    <button class="btn-nuevo-pedido" id="cita-nueva"
+            type="button"
+            onclick="event.preventDefault(); event.stopPropagation(); if(typeof abrirNuevaCita === 'function') abrirNuevaCita(); else alert('abrirNuevaCita no existe');"
+            style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff">
       ➕ Nueva cita
     </button>`;
 
@@ -1854,3 +1857,7 @@ window.setOrdersVista = function(vista){
   _ordersVistaActual = vista;
   renderOrders();
 };
+
+
+/* Exponer para onclick inline */
+window.abrirNuevaCita = abrirNuevaCita;
