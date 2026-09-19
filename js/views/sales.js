@@ -63,7 +63,7 @@ function buildResumen(tickets, ventasSueltas){
   let unidades = 0, ingreso = 0, ganancia = 0;
 
   tickets.forEach(t => {
-    t.items.forEach(i => unidades += i.cantidad);
+    t.items.forEach(i => unidades += (Number(i.cantidad) || 0));
     ingreso += t.total;
     ganancia += t.ganancia;
   });
@@ -96,7 +96,7 @@ function buildDayGroup(dia, data){
   let unidades = 0, ingreso = 0, ganancia = 0;
 
   data.tickets.forEach(t => {
-    t.items.forEach(i => unidades += i.cantidad);
+    t.items.forEach(i => unidades += (Number(i.cantidad) || 0));
     ingreso += t.total;
     ganancia += t.ganancia;
   });
@@ -224,6 +224,14 @@ function ventaSueltaRowHTML(v){
 
   const claseGanancia = ganancia >= 0 ? 'pos' : 'neg';
 
+  /* Cantidad con unidad si es fraccionado */
+  const t = tipoDe(p);
+  const unidad = p.unidad || 'unidad';
+  const esFrac = (t === 'producto' || t === 'material') && unidad !== 'unidad';
+  const cantTxt = esFrac
+    ? `${fmtCantidadUnidad(cant, unidad)} × ${fmt(precio)}/${unidadInfo(unidad).abreviacion}`
+    : `${cant} × ${fmt(precio)}`;
+
   return `
     <div class="bill-row" data-detail="${p.id}">
       <div class="bill-head">
@@ -241,7 +249,7 @@ function ventaSueltaRowHTML(v){
 
       <div class="bill-info">
         <div class="bill-nombre">${esc(p.nombre)}</div>
-        <div class="bill-meta">${cant} × ${fmt(precio)}</div>
+        <div class="bill-meta">${cantTxt}</div>
       </div>
 
       <div class="bill-amount">

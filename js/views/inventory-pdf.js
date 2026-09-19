@@ -431,10 +431,18 @@ function dibujarCardCatalogoPDF(doc, x, y, w, h, imgH, producto, imgData){
 
   doc.text(nombreMax, x + w / 2, y + imgH + 8, { align: 'center' });
 
+  /* Precio con unidad si es fraccionado */
+  const unidad = producto.unidad || 'unidad';
+  const t2 = tipoDe(producto);
+  const esFrac = (t2 === 'producto' || t2 === 'material') && unidad !== 'unidad';
+  const precioTxt = esFrac
+    ? `${fmt(c.precioVenta)}/${unidadInfo(unidad).abreviacion}`
+    : fmt(c.precioVenta);
+
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
+  doc.setFontSize(esFrac ? 12 : 14);
   doc.setTextColor(...PDF_VERDE);
-  doc.text(fmt(c.precioVenta), x + w / 2, y + imgH + 19, { align: 'center' });
+  doc.text(precioTxt, x + w / 2, y + imgH + 19, { align: 'center' });
 }
 
 function dibujarPlaceholderFoto(doc, x, y, w, h, producto){
@@ -781,9 +789,25 @@ async function generarInventarioPDF(op){
 }
 
 async function generarCatalogoPDF(op, noPreview){
-  const productos = (window.DB.products || []).filter(p => calc(p).stock > 0);
+  const productos = (window.DB.products || []).filter(p => {
+    /* Solo vendibles */
+    if(typeof esVendible === 'function' && !esVendible(p)) return false;
+
+    const c = calc(p);
+    const t = tipoDe(p);
+
+    /* Servicios siempre */
+    if(t === 'servicio') return true;
+
+    /* Recetas: si tiene stock suficiente */
+    if(t === 'receta') return c.stockDisponible > 0 || c.stockInfinito;
+
+    /* Productos y materiales: stock normal */
+    return c.stock > 0;
+  });
+
   if(!productos.length){
-    toast('⚠️ No hay productos con stock');
+    toast('⚠️ No hay productos para el catálogo');
     return;
   }
 

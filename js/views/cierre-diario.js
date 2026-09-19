@@ -13,6 +13,7 @@ function abrirCierreDiario(){
   let efectivo = 0, debito = 0, pagoMovil = 0, otros = 0;
   let productosVendidos = {};
   let unidadesTotales = 0;
+  let porTipo = { producto: 0, material: 0, receta: 0, servicio: 0 };
 
   ticketsHoy.forEach(t => {
     totalFacturado += t.total || 0;
@@ -28,8 +29,19 @@ function abrirCierreDiario(){
       if(!productosVendidos[k]) productosVendidos[k] = 0;
       productosVendidos[k] += it.cantidad || 0;
       unidadesTotales += it.cantidad || 0;
+
+      /* Desglose por tipo */
+      const prod = window.DB.products.find(x => x.id === it.productoId);
+      const tipo = prod ? tipoDe(prod) : 'producto';
+      if(porTipo[tipo] !== undefined){
+        porTipo[tipo] += (it.cantidad || 0) * (it.precioUnitario || 0);
+      }
     });
   });
+
+  /* Solo mostrar desglose si hay 2+ tipos */
+  const tiposConValor = Object.keys(porTipo).filter(k => porTipo[k] > 0);
+  const mostrarDesglose = tiposConValor.length >= 2;
 
   /* Stock restante actual */
   const stockRestante = (window.DB.products || [])
@@ -114,6 +126,19 @@ function abrirCierreDiario(){
           ` : ''}
         </div>
 
+        ${mostrarDesglose ? `
+        <div class="cierre-metodos">
+          <div class="cierre-metodo-row" style="font-weight:900;color:var(--dim);text-transform:uppercase;font-size:10px;letter-spacing:.5px">
+            <span>Por tipo</span>
+            <span></span>
+          </div>
+          ${porTipo.producto > 0 ? `<div class="cierre-metodo-row"><span>🟢 Productos</span><b>${fmt(porTipo.producto)}</b></div>` : ''}
+          ${porTipo.material > 0 ? `<div class="cierre-metodo-row"><span>🔵 Materiales</span><b>${fmt(porTipo.material)}</b></div>` : ''}
+          ${porTipo.receta > 0 ? `<div class="cierre-metodo-row"><span>🟣 Recetas</span><b>${fmt(porTipo.receta)}</b></div>` : ''}
+          ${porTipo.servicio > 0 ? `<div class="cierre-metodo-row"><span>🔴 Servicios</span><b>${fmt(porTipo.servicio)}</b></div>` : ''}
+        </div>
+        ` : ''}
+
         <div class="cierre-top-title">🏆 Top 5 productos</div>
         <div class="cierre-top">${topHTML}</div>
 
@@ -145,6 +170,10 @@ function abrirCierreDiario(){
           ${cierreGuardado ? '🔄 Actualizar cierre' : '✅ Cerrar el día'}
         </button>
 
+        <button class="btn-ghost" id="cie-movimiento" style="margin-top:8px">
+          💰 Registrar movimiento
+        </button>
+
         <button class="btn-ghost" id="cie-exportar" style="margin-top:8px">
           📤 Exportar cierre
         </button>
@@ -166,6 +195,14 @@ function abrirCierreDiario(){
   document.querySelector('#cie-guardar').addEventListener('click', () => {
     guardarCierreDiario(ticketsHoy);
     cerrar();
+  });
+
+  document.querySelector('#cie-movimiento').addEventListener('click', () => {
+    if(typeof abrirMovimiento === 'function') abrirMovimiento();
+  });
+
+  document.querySelector('#cie-movimiento').addEventListener('click', () => {
+    if(typeof abrirMovimiento === 'function') abrirMovimiento();
   });
 
   document.querySelector('#cie-exportar').addEventListener('click', () => {
@@ -206,6 +243,7 @@ function guardarCierreDiario(ticketsHoy){
     efectivo,
     debito,
     pagoMovil,
+    porTipo,
     stockSnapshot
   };
 

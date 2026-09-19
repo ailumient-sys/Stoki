@@ -50,12 +50,24 @@ function buildTicketHTML(t){
       '<div style="width:40px;height:40px;border-radius:10px;background:var(--bg3)"></div>';
     const subtotal = item.cantidad * item.precioUnitario;
 
+    /* Formato de cantidad según unidad */
+    let cantTxt;
+    const unidad = p ? (p.unidad || 'unidad') : 'unidad';
+    const t2 = p ? tipoDe(p) : 'producto';
+    const esFrac = (t2 === 'producto' || t2 === 'material') && unidad !== 'unidad';
+
+    if(esFrac){
+      cantTxt = `${fmtCantidadUnidad(item.cantidad, unidad)} × ${fmt(item.precioUnitario)}/${unidadInfo(unidad).abreviacion}`;
+    } else {
+      cantTxt = `${item.cantidad} × ${fmt(item.precioUnitario)}`;
+    }
+
     return `
       <div class="ticket-item">
         ${thumb}
         <div class="ticket-item-info">
           <div class="ticket-item-name">${esc(item.nombre)}</div>
-          <div class="ticket-item-meta">${item.cantidad} × ${fmt(item.precioUnitario)}</div>
+          <div class="ticket-item-meta">${cantTxt}</div>
         </div>
         <div class="ticket-item-total">${fmt(subtotal)}</div>
       </div>`;
@@ -180,6 +192,13 @@ async function buildTicketCanvas(t){
 
   const itemsHTML = items.map(item => {
     const subtotal = item.cantidad * item.precioUnitario;
+    const p = window.DB.products.find(x => x.id === item.productoId);
+    const unidad = p ? (p.unidad || 'unidad') : 'unidad';
+    const t2 = p ? tipoDe(p) : 'producto';
+    const esFrac = (t2 === 'producto' || t2 === 'material') && unidad !== 'unidad';
+    const cantMostrar = esFrac
+      ? fmtCantidadUnidad(item.cantidad, unidad)
+      : item.cantidad;
     return `
       <tr>
         <td style="padding:8px 4px;border-bottom:1px solid #e0e0e0;
@@ -188,7 +207,7 @@ async function buildTicketCanvas(t){
         </td>
         <td style="padding:8px 4px;border-bottom:1px solid #e0e0e0;
                    text-align:center;font-size:13px;color:#333">
-          ${item.cantidad}
+          ${cantMostrar}
         </td>
         <td style="padding:8px 4px;border-bottom:1px solid #e0e0e0;
                    text-align:right;font-size:13px;color:#333">

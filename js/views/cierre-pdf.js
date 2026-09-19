@@ -165,6 +165,16 @@ async function generarPDFCierre(modo, incluir){
     });
   });
 
+  /* Movimientos del día */
+  const hoyISO = new Date().toISOString().slice(0, 10);
+  const movsHoy = (window.DB.movimientos || []).filter(m =>
+    m.fecha && m.fecha.slice(0, 10) === hoyISO
+  );
+  const totalPropinas = movsHoy.filter(m => m.tipo === 'propina').reduce((s, m) => s + m.monto, 0);
+  const totalMermas = movsHoy.filter(m => m.tipo === 'merma').reduce((s, m) => s + m.monto, 0);
+  const netoMovs = totalPropinas - totalMermas;
+  const resultadoDia = totalFacturado + netoMovs;
+
   /* Stock restante actual */
   const stockRestante = (window.DB.products || [])
     .map(p => ({
@@ -390,6 +400,84 @@ async function generarPDFCierre(modo, incluir){
     doc.text(fmt(totalFacturado), W - M - 3, y, { align: 'right' });
 
     y += 12;
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     MOVIMIENTOS DEL DÍA
+     ═══════════════════════════════════════════════════════ */
+  if(movsHoy.length){
+    if(y > H - 60){
+      doc.addPage();
+      y = 20;
+    }
+
+    doc.setTextColor(...NEGRO);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('Movimientos del día', M, y);
+    y += 6;
+
+    movsHoy.forEach(m => {
+      if(y > H - 30){
+        doc.addPage();
+        y = 20;
+      }
+
+      const signo = m.tipo === 'propina' ? '+' : '-';
+      const color = m.tipo === 'propina' ? VERDE : ROJO;
+
+      doc.setTextColor(...NEGRO);
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8.5);
+      const desc = (m.descripcion || m.tipo).slice(0, 55);
+      doc.text(`• ${desc}`, M + 3, y);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...color);
+      doc.text(`${signo}${fmt(m.monto)}`, W - M - 3, y, { align: 'right' });
+
+      y += 5;
+    });
+
+    /* Total movimientos */
+    y += 2;
+    doc.setDrawColor(...VERDE);
+    doc.setLineWidth(0.3);
+    doc.line(M, y, W - M, y);
+    y += 5;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...NEGRO);
+    doc.text('Neto movimientos', M + 3, y);
+
+    const colorNeto = netoMovs >= 0 ? VERDE : ROJO;
+    doc.setTextColor(...colorNeto);
+    doc.text(`${netoMovs >= 0 ? '+' : ''}${fmt(netoMovs)}`, W - M - 3, y, { align: 'right' });
+
+    y += 12;
+
+    /* Resultado final del día */
+    doc.setFillColor(...GRIS2);
+    doc.roundedRect(M, y, W - 2 * M, 18, 3, 3, 'F');
+
+    doc.setTextColor(...NEGRO);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text('RESULTADO DEL DÍA', M + 6, y + 7);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...GRIS);
+    doc.text(`Facturado: ${fmt(totalFacturado)}`, M + 6, y + 13);
+    doc.text(`Movimientos: ${netoMovs >= 0 ? '+' : ''}${fmt(netoMovs)}`, M + 90, y + 13);
+
+    doc.setTextColor(...VERDE);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text(fmt(resultadoDia), W - M - 6, y + 12, { align: 'right' });
+
+    y += 24;
   }
 
   /* ═══════════════════════════════════════════════════════
