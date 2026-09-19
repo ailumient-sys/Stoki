@@ -153,6 +153,12 @@ window.STOKI_LIC = {
 };
 
 async function verificarLicencia(){
+  if(!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()){
+    window.STOKI_LIC = { activa: true, trial: false, bloqueada: false, diasRestantes: 999, tipo: 'dev', deviceId: 'dev-browser' };
+    console.log('🔓 Modo dev: licencia saltada');
+    return window.STOKI_LIC;
+  }
+
   const deviceId = await obtenerDeviceId();
   window.STOKI_LIC.deviceId = deviceId;
 

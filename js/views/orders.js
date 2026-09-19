@@ -1607,7 +1607,7 @@ function abrirNuevaCita(){
   const horaActual = new Date().toTimeString().slice(0, 5);
 
   const h = `
-    <div class="overlay" id="m-nueva-cita">
+    <div class="overlay open" id="m-nueva-cita">
       <div class="sheet" style="position:relative">
         <div class="sheet-handle"></div>
         <button class="x" id="nc-close">✕</button>

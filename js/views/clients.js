@@ -56,6 +56,10 @@ function buildClientsToolbar(){
 
   return `
     <div class="inv-toolbar">
+      <button class="btn-nuevo-proveedor" id="cli-nuevo" style="margin-bottom:10px">
+        ➕ Nuevo cliente
+      </button>
+
       <div class="inv-search">
         <input type="text"
                id="cli-search"
@@ -107,6 +111,11 @@ function buildClientRow(c){
 }
 
 function bindClientsEvents(){
+  const btnNuevo = document.querySelector('#cli-nuevo');
+  if(btnNuevo){
+    btnNuevo.onclick = () => openClientNew();
+  }
+
   const input = document.querySelector('#cli-search');
   if(input){
     input.addEventListener('input', e => {
@@ -317,4 +326,83 @@ async function deleteClient(clienteId, nombre){
   closeClientDetail();
   renderClients();
   toast('🗑️ Cliente eliminado');
+}
+/* ═══════════════════════════════════════════
+   NUEVO CLIENTE
+   ═══════════════════════════════════════════ */
+function openClientNew(){
+  if(document.querySelector('#m-client-new')) return;
+
+  const h = `
+    <div class="overlay centered open" id="m-client-new">
+      <div class="sheet" style="position:relative">
+        <button class="x" id="cln-close">✕</button>
+        <h2>👥 Nuevo cliente</h2>
+        <div class="sub">Guardá sus datos para futuras ventas.</div>
+
+        <label>Nombre <span style="color:var(--red);font-weight:900">*</span></label>
+        <input id="cln-nombre" placeholder="Ej: María Pérez" autocomplete="off">
+
+        <label>Cédula / ID <span style="color:var(--dim);text-transform:none;font-weight:600">(opcional)</span></label>
+        <input id="cln-cedula" placeholder="Ej: V-12345678" autocomplete="off">
+
+        <label>Teléfono <span style="color:var(--dim);text-transform:none;font-weight:600">(opcional)</span></label>
+        <input id="cln-telefono" type="tel" placeholder="Ej: 0412-1234567" autocomplete="off">
+
+        <label>Notas <span style="color:var(--dim);text-transform:none;font-weight:600">(opcional)</span></label>
+        <input id="cln-notas" placeholder="Cliente frecuente, prefiere..." autocomplete="off">
+
+        <button class="btn-main" id="cln-save">✅ Guardar cliente</button>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', h);
+
+  const cerrar = () => document.querySelector('#m-client-new')?.remove();
+  document.querySelector('#cln-close').onclick = cerrar;
+  document.querySelector('#m-client-new').onclick = e => {
+    if(e.target.id === 'm-client-new') cerrar();
+  };
+
+  setTimeout(() => {
+    const inp = document.querySelector('#cln-nombre');
+    if(inp) inp.focus();
+  }, 200);
+
+  document.querySelector('#cln-save').onclick = () => {
+    const nombre = document.querySelector('#cln-nombre').value.trim();
+    if(!nombre) return toast('⚠️ El nombre es obligatorio');
+
+    const cedula = document.querySelector('#cln-cedula').value.trim();
+    const telefono = document.querySelector('#cln-telefono').value.trim();
+    const notas = document.querySelector('#cln-notas').value.trim();
+
+    /* Verificar duplicado por nombre */
+    const dup = (window.DB.clients || []).find(c =>
+      normalize(c.nombre) === normalize(nombre)
+    );
+    if(dup) return toast(`⚠️ Ya existe "${dup.nombre}"`);
+
+    const nuevo = {
+      id: 'cli_' + uid(),
+      nombre,
+      cedula,
+      telefono,
+      notas,
+      pais: '',
+      creado: Date.now()
+    };
+
+    if(!Array.isArray(window.DB.clients)) window.DB.clients = [];
+    window.DB.clients.push(nuevo);
+
+    saveDB();
+    cerrar();
+
+    if(typeof renderClients === 'function') renderClients();
+    if(typeof renderAll === 'function') renderAll();
+
+    toast(`✅ ${nombre} agregado`);
+    if(navigator.vibrate) navigator.vibrate(20);
+  };
 }
