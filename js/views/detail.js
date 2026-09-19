@@ -32,6 +32,19 @@ function openDetail(id){
   const btnDel = $('#d-del');
   if(btnDel) btnDel.onclick = () => eliminarProducto(id, p.nombre);
 
+  /* Registrar pérdida (solo producto y material) */
+  const btnMerma = $('#d-merma');
+  if(btnMerma){
+    btnMerma.onclick = () => {
+      closeModal('#m-detail');
+      if(typeof abrirMovimiento === 'function'){
+        abrirMovimiento({ tipo: 'merma', itemId: id });
+      } else {
+        toast('⚠️ Movimientos no disponible');
+      }
+    };
+  }
+
   /* Solo productos y materiales tienen Agregar stock */
   const btnStock = $('#d-stock');
   if(btnStock){
@@ -278,6 +291,7 @@ function buildDetailHTML(p, c, enRojo){
 
     ${btnRestock}
     <button class="btn-ghost" id="d-edit">✏️ Editar producto</button>
+    <button class="btn-ghost" id="d-merma" style="color:var(--amber)">⚠️ Registrar pérdida</button>
     <button class="btn-ghost btn-danger" id="d-del">Eliminar producto</button>
   `;
 }
@@ -394,6 +408,7 @@ function buildDetailMaterial(p, c){
 
     <button class="btn-main" id="d-stock">➕ Agregar stock</button>
     <button class="btn-ghost" id="d-edit">✏️ Editar material</button>
+    <button class="btn-ghost" id="d-merma" style="color:var(--amber)">⚠️ Registrar pérdida</button>
     <button class="btn-ghost btn-danger" id="d-del">Eliminar material</button>
   `;
 }

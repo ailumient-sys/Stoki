@@ -700,10 +700,11 @@ document.addEventListener('click', function(e){
   var tab = e.target.closest('.orders-tab[data-ovista]');
   if(tab){
     e.preventDefault(); e.stopPropagation();
-    if(typeof _ordersVistaActual !== 'undefined'){
-      window._ordersVistaActual = tab.dataset.ovista;
+    if(typeof window.setOrdersVista === 'function'){
+      window.setOrdersVista(tab.dataset.ovista);
+    } else if(typeof renderOrders === 'function') {
+      renderOrders();
     }
-    if(typeof renderOrders === 'function') renderOrders();
     return;
   }
 

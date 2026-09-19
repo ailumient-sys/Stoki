@@ -2,11 +2,13 @@
 let _movTipo = 'propina';
 let _movItems = [];
 
-function abrirMovimiento(){
+function abrirMovimiento(opciones){
   if(document.querySelector('#m-movimiento')) return;
 
-  _movTipo = 'propina';
-  _movItems = [];
+  const opt = opciones || {};
+
+  _movTipo = opt.tipo || 'propina';
+  _movItems = opt.itemId ? [opt.itemId] : [];
 
   const h = `
     <div class="overlay centered open" id="m-movimiento">
@@ -93,6 +95,30 @@ function abrirMovimiento(){
   if(cantInput) cantInput.oninput = updateMovPreview;
 
   _movActualizarUI();
+
+  /* Si viene con ítem precargado, aplicarlo */
+  if(opt.itemId){
+    const p = window.DB.products.find(x => x.id === opt.itemId);
+    if(p){
+      const txt = document.querySelector('#mov-item-txt');
+      if(txt){
+        txt.textContent = p.nombre;
+        txt.classList.add('asignada');
+      }
+
+      const u = unidadInfo(p.unidad || 'unidad');
+      const unitEl = document.querySelector('#mov-cant-unit');
+      if(unitEl) unitEl.textContent = u.abreviacion;
+
+      const c = calc(p);
+      const info = document.querySelector('#mov-cant-info');
+      if(info){
+        const stockTxt = c.stock === Infinity ? '∞' : fmtCantidadUnidad(c.stock, p.unidad || 'unidad');
+        info.textContent = `Disponible: ${stockTxt} · Costo: ${fmt(c.costoU)}/${u.abreviacion}`;
+      }
+    }
+  }
+
   updateMovPreview();
 }
 

@@ -43,6 +43,15 @@ function abrirCierreDiario(){
   const tiposConValor = Object.keys(porTipo).filter(k => porTipo[k] > 0);
   const mostrarDesglose = tiposConValor.length >= 2;
 
+  /* Movimientos del día */
+  const movsHoy = (window.DB.movimientos || []).filter(m =>
+    m.fecha && m.fecha.slice(0, 10) === hoy
+  );
+  const totalPropinas = movsHoy.filter(m => m.tipo === 'propina').reduce((s, m) => s + (m.monto || 0), 0);
+  const totalMermas = movsHoy.filter(m => m.tipo === 'merma').reduce((s, m) => s + (m.monto || 0), 0);
+  const netoMovs = totalPropinas - totalMermas;
+  const resultadoFinal = totalFacturado + netoMovs;
+
   /* Stock restante actual */
   const stockRestante = (window.DB.products || [])
     .map(p => ({
@@ -141,6 +150,27 @@ function abrirCierreDiario(){
 
         <div class="cierre-top-title">🏆 Top 5 productos</div>
         <div class="cierre-top">${topHTML}</div>
+
+        ${movsHoy.length ? `
+        <div class="cierre-metodos" style="margin-top:12px">
+          <div class="cierre-metodo-row" style="font-weight:900;color:var(--dim);text-transform:uppercase;font-size:10px;letter-spacing:.5px">
+            <span>Movimientos del día</span>
+            <span></span>
+          </div>
+          ${totalPropinas > 0 ? `<div class="cierre-metodo-row"><span>💰 Propinas / Extras</span><b style="color:var(--green)">+${fmt(totalPropinas)}</b></div>` : ''}
+          ${totalMermas > 0 ? `<div class="cierre-metodo-row"><span>⚠️ Mermas / Pérdidas</span><b style="color:var(--red)">−${fmt(totalMermas)}</b></div>` : ''}
+          <div class="cierre-metodo-row" style="border-top:1px solid var(--line);margin-top:4px;padding-top:8px">
+            <span><b>Neto movimientos</b></span>
+            <b style="color:${netoMovs >= 0 ? 'var(--green)' : 'var(--red)'}">${netoMovs >= 0 ? '+' : ''}${fmt(netoMovs)}</b>
+          </div>
+        </div>
+
+        <div class="cierre-resultado-box">
+          <div class="cierre-resultado-label">RESULTADO DEL DÍA</div>
+          <div class="cierre-resultado-valor">${fmt(resultadoFinal)}</div>
+          <div class="cierre-resultado-sub">Facturado ${fmt(totalFacturado)} ${netoMovs !== 0 ? (netoMovs >= 0 ? '+ ' + fmt(netoMovs) : '− ' + fmt(Math.abs(netoMovs))) : ''}</div>
+        </div>
+        ` : ''}
 
         <div class="cierre-stock-box">
           <span>📦 Stock descontado</span>
@@ -260,4 +290,8 @@ function guardarCierreActual(){
   const ticketsHoy = (window.DB.tickets || []).filter(t => t.fecha.slice(0, 10) === hoy);
 
   guardarCierreDiario(ticketsHoy);
+
+  /* Cerrar el modal */
+  const el = document.querySelector('#m-cierre');
+  if(el) el.remove();
 }

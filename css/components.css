@@ -1021,3 +1021,8 @@ body.lic-bloqueada .toast{
 .rp-prov-empty{padding:14px;text-align:center;font-size:12px;color:var(--dim);background:var(--bg3);border-radius:10px}
 .rp-prov-nuevo{background:rgba(34,197,94,.12);border:1px dashed var(--green);border-radius:10px;padding:10px;color:var(--green);font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;width:100%;margin-top:4px}
 .rst-unidad{background:var(--bg4);color:var(--txt);border-radius:8px;padding:0 14px;display:flex;align-items:center;font-size:13px;font-weight:800;min-height:44px}
+
+.cierre-resultado-box{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(22,163,74,.05));border:1px solid rgba(34,197,94,.35);border-radius:14px;padding:14px;margin-top:12px;text-align:center}
+.cierre-resultado-label{font-size:10px;font-weight:900;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.cierre-resultado-valor{font-size:28px;font-weight:900;color:var(--green);font-variant-numeric:tabular-nums;letter-spacing:-1px;line-height:1.1}
+.cierre-resultado-sub{font-size:11px;color:var(--dim);font-weight:700;margin-top:4px}

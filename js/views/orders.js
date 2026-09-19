@@ -1850,3 +1850,11 @@ function guardarNuevaCita(){
   toast(`✅ Cita agendada para ${fecha.split('-').reverse().slice(0,2).join('/')} a las ${hora}`);
   if(navigator.vibrate) navigator.vibrate(20);
 }
+
+/* ═══════════════════════════════════════════
+   Cambiar vista Orders (global para delegation)
+   ═══════════════════════════════════════════ */
+window.setOrdersVista = function(vista){
+  _ordersVistaActual = vista;
+  renderOrders();
+};
