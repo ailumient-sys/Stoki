@@ -5,6 +5,7 @@
    ========================================================= */
 
 let pedClienteId = null;
+let _ordersVistaActual = 'pedidos';
 let pedCarrito = [];
 let pedPickerModo = 'single';
 
@@ -14,13 +15,24 @@ function renderOrders(){
 
   const orders = window.DB.orders || [];
 
+  /* Tabs: Pedidos / Citas */
+  const tabs = `
+    <div class="orders-tabs">
+      <button class="orders-tab ${_ordersVistaActual==='pedidos'?'active':''}" data-ovista="pedidos" type="button">📦 Pedidos</button>
+      <button class="orders-tab ${_ordersVistaActual==='citas'?'active':''}" data-ovista="citas" type="button">📅 Citas</button>
+    </div>`;
+
+  if(_ordersVistaActual === 'citas'){
+    return renderCitasInterno(cont, tabs);
+  }
+
   const btnNuevo = `
     <button class="btn-nuevo-pedido" id="ped-nuevo">
       ➕ Nuevo pedido
     </button>`;
 
   if(!orders.length){
-    cont.innerHTML = btnNuevo + `
+    cont.innerHTML = tabs + btnNuevo + `
       <div class="empty">
         <div class="ico">📦</div>
         <h3>Sin pedidos</h3>
@@ -36,7 +48,7 @@ function renderOrders(){
   activos.sort((a, b) => a.fecha < b.fecha ? 1 : -1);
   cerrados.sort((a, b) => a.fecha < b.fecha ? 1 : -1);
 
-  let html = btnNuevo;
+  let html = tabs + btnNuevo;
 
   if(activos.length){
     html += `<div class="orders-section-title activos">
@@ -1439,4 +1451,402 @@ function getReservadoProducto(productoId){
 
 function initOrders(){
   /* Nada específico por ahora */
+}
+
+/* ═══════════════════════════════════════════
+   CITAS — Pestaña dentro de Pedidos
+   ═══════════════════════════════════════════ */
+function renderCitasInterno(cont, tabs){
+  const hoy = todayISO();
+  const citas = (window.DB.orders || []).filter(o => o.tipo === 'cita');
+
+  /* Agrupar por fecha */
+  const porFecha = {};
+  citas.forEach(c => {
+    const fecha = c.fechaCita || hoy;
+    if(!porFecha[fecha]) porFecha[fecha] = [];
+    porFecha[fecha].push(c);
+  });
+
+  /* Fechas ordenadas */
+  const fechas = Object.keys(porFecha).sort();
+
+  let secciones = '';
+
+  /* Próximas / hoy */
+  fechas.forEach(fecha => {
+    const lista = porFecha[fecha].sort((a, b) =>
+      (a.horaCita || '00:00').localeCompare(b.horaCita || '00:00')
+    );
+
+    const esHoy = fecha === hoy;
+    const esPasado = fecha < hoy;
+
+    /* Ocultar muy pasadas */
+    if(esPasado && fecha < new Date(Date.now() - 7*86400000).toISOString().slice(0,10)) return;
+
+    let titulo;
+    if(esHoy) titulo = 'HOY';
+    else if(fecha === new Date(Date.now() + 86400000).toISOString().slice(0,10)) titulo = 'MAÑANA';
+    else titulo = fecha.split('-').reverse().slice(0,2).join('/');
+
+    secciones += `
+      <div class="cita-seccion">
+        <div class="cita-fecha ${esHoy?'hoy':''} ${esPasado?'pasada':''}">${titulo}</div>
+        ${lista.map(c => citaRowHTML(c)).join('')}
+      </div>`;
+  });
+
+  if(!secciones){
+    secciones = `
+      <div class="empty">
+        <div class="ico">📅</div>
+        <h3>Sin citas</h3>
+        <p>Creá tu primera cita para agendar<br>servicios con tus clientes.</p>
+      </div>`;
+  }
+
+  const btnNuevo = `
+    <button class="btn-nuevo-pedido" id="cita-nueva" style="background:linear-gradient(135deg,#a855f7,#7c3aed);color:#fff">
+      ➕ Nueva cita
+    </button>`;
+
+  cont.innerHTML = tabs + btnNuevo + secciones;
+  bindOrdersEvents();
+  bindCitasEvents();
+}
+
+function citaRowHTML(o){
+  const cliente = (window.DB.clients || []).find(c => c.id === o.clienteId);
+  const clienteNombre = cliente ? cliente.nombre : (o.clienteNombre || 'Sin cliente');
+
+  const totalItems = (o.items || []).reduce((s, i) => s + i.cantidad, 0);
+  const hora = o.horaCita || o.fecha.slice(11, 16);
+
+  const claseEstado = o.estado === 'cerrado' ? 'cerrada'
+                     : o.estado === 'cancelado' ? 'cancelada'
+                     : 'activa';
+
+  const refHTML = o.tasaSnapshot > 0
+    ? `<div class="order-ref">${fmtRefOnly(o.total, o.tasaSnapshot)}</div>`
+    : '';
+
+  const checksHTML = `
+    <div class="order-checks-row">
+      <div class="order-check-badge ${o.pagado ? 'done' : ''}">
+        <span class="order-check-icon">${o.pagado ? '✓' : '💵'}</span>
+        Pagado
+      </div>
+      <div class="order-check-badge ${o.completado ? 'done' : ''}">
+        <span class="order-check-icon">${o.completado ? '✓' : '✅'}</span>
+        Completado
+      </div>
+    </div>`;
+
+  return `
+    <div class="order-card cita ${claseEstado}" data-pedido="${o.id}">
+      <div class="order-head">
+        <div class="order-numero">⏰ ${esc(hora)}</div>
+        <div class="order-fecha">${esc(o.numero)}</div>
+      </div>
+
+      <div class="order-cliente">
+        <span>👤</span>
+        <span>${esc(clienteNombre)}</span>
+      </div>
+
+      <div class="order-resumen">${totalItems} ${totalItems === 1 ? 'servicio' : 'servicios'}</div>
+
+      <div class="order-monto-row">
+        <div>
+          <div class="order-total">${fmt(o.total)}</div>
+          ${refHTML}
+        </div>
+      </div>
+
+      ${checksHTML}
+    </div>`;
+}
+
+function bindCitasEvents(){
+  /* Tab activa */
+  document.querySelectorAll('[data-ovista]').forEach(t => {
+    t.onclick = () => {
+      _ordersVistaActual = t.dataset.ovista;
+      renderOrders();
+    };
+  });
+
+  /* Nueva cita */
+  const btn = document.querySelector('#cita-nueva');
+  if(btn){
+    btn.onclick = () => abrirNuevaCita();
+  }
+
+  /* Cards de cita */
+  document.querySelectorAll('.order-card.cita').forEach(card => {
+    card.onclick = () => {
+      const id = card.dataset.pedido;
+      if(id && typeof openOrderDetail === 'function') openOrderDetail(id);
+    };
+  });
+}
+
+/* ═══════════════════════════════════════════
+   NUEVA CITA
+   ═══════════════════════════════════════════ */
+let _citaClienteId = null;
+let _citaServicios = [];
+
+function abrirNuevaCita(){
+  if(document.querySelector('#m-nueva-cita')) return;
+
+  _citaClienteId = null;
+  _citaServicios = [];
+
+  const hoy = todayISO();
+  const horaActual = new Date().toTimeString().slice(0, 5);
+
+  const h = `
+    <div class="overlay" id="m-nueva-cita">
+      <div class="sheet" style="position:relative">
+        <div class="sheet-handle"></div>
+        <button class="x" id="nc-close">✕</button>
+        <h2>📅 Nueva cita</h2>
+        <div class="sub">Agendá un servicio con tu cliente.</div>
+
+        <label>Cliente <span style="color:var(--red);font-weight:900">*</span></label>
+        <button type="button" class="cli-picker-display" id="nc-cli-btn">
+          <span class="cli-picker-icon">👤</span>
+          <span class="cli-picker-text" id="nc-cli-txt">Elegir cliente</span>
+          <span class="cli-picker-chevron">▾</span>
+        </button>
+
+        <div class="row2">
+          <div>
+            <label>Fecha</label>
+            <input id="nc-fecha" type="date" value="${hoy}">
+          </div>
+          <div>
+            <label>Hora</label>
+            <input id="nc-hora" type="time" value="${horaActual}">
+          </div>
+        </div>
+
+        <label>Servicios</label>
+        <div id="nc-servicios-list"></div>
+        <button type="button" class="btn-ghost" id="nc-add-serv" style="margin-top:6px">➕ Agregar servicio</button>
+
+        <div class="ped-totales" id="nc-totales" style="display:none"></div>
+
+        <button class="btn-main" id="nc-save">✅ Crear cita</button>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', h);
+
+  renderNcServicios();
+
+  const cerrar = () => document.querySelector('#m-nueva-cita')?.remove();
+  document.querySelector('#nc-close').onclick = cerrar;
+  document.querySelector('#m-nueva-cita').onclick = e => {
+    if(e.target.id === 'm-nueva-cita') cerrar();
+  };
+
+  document.querySelector('#nc-cli-btn').onclick = () => {
+    if(typeof abrirSelectorClienteCita === 'function'){
+      abrirSelectorClienteCita(id => {
+        _citaClienteId = id;
+        const cli = window.DB.clients.find(c => c.id === id);
+        const txt = document.querySelector('#nc-cli-txt');
+        if(txt && cli){
+          txt.textContent = cli.nombre;
+          txt.classList.add('asignado');
+        }
+      });
+    } else if(typeof openNewOrder === 'function') {
+      toast('⚠️ Selector no disponible');
+    }
+  };
+
+  document.querySelector('#nc-add-serv').onclick = abrirPickerServicioCita;
+  document.querySelector('#nc-save').onclick = guardarNuevaCita;
+}
+
+function renderNcServicios(){
+  const cont = document.querySelector('#nc-servicios-list');
+  if(!cont) return;
+
+  if(!_citaServicios.length){
+    cont.innerHTML = '<div style="text-align:center;color:var(--dim);font-size:12px;padding:14px">Sin servicios</div>';
+    document.querySelector('#nc-totales').style.display = 'none';
+    return;
+  }
+
+  cont.innerHTML = _citaServicios.map((item, i) => {
+    const p = window.DB.products.find(x => x.id === item.productoId);
+    const nombre = p ? p.nombre : 'Desconocido';
+    const sub = item.cantidad * item.precioUnitario;
+    return `
+      <div class="cart-item">
+        <div class="cart-item-info">
+          <div class="cart-item-name">${esc(nombre)}</div>
+          <div class="cart-item-prices">
+            <span>${item.cantidad} × ${fmt(item.precioUnitario)}</span>
+            <span class="cart-item-subtotal">${fmt(sub)}</span>
+          </div>
+        </div>
+        <button class="cart-item-del" data-ncdel="${i}" type="button">🗑️</button>
+      </div>`;
+  }).join('');
+
+  cont.querySelectorAll('[data-ncdel]').forEach(btn => {
+    btn.onclick = () => {
+      _citaServicios.splice(+btn.dataset.ncdel, 1);
+      renderNcServicios();
+      updateNcTotales();
+    };
+  });
+
+  updateNcTotales();
+}
+
+function updateNcTotales(){
+  const cont = document.querySelector('#nc-totales');
+  if(!cont) return;
+
+  if(!_citaServicios.length){
+    cont.style.display = 'none';
+    return;
+  }
+
+  cont.style.display = 'block';
+  const total = _citaServicios.reduce((s, i) => s + i.cantidad * i.precioUnitario, 0);
+  const ref = fmtRefOnly(total);
+
+  cont.innerHTML = `
+    <div class="ped-total-line"><span>Total</span><b>${fmt(total)}</b></div>
+    ${ref ? `<div class="ped-ref">${ref}</div>` : ''}`;
+}
+
+function abrirPickerServicioCita(){
+  if(document.querySelector('#m-cita-pick')) return;
+
+  const servicios = (window.DB.products || []).filter(p => tipoDe(p) === 'servicio');
+
+  if(!servicios.length){
+    return toast('⚠️ No tenés servicios todavía');
+  }
+
+  const h = `
+    <div class="overlay centered open" id="m-cita-pick" style="z-index:210">
+      <div class="sheet" style="position:relative;max-width:420px">
+        <button class="x" id="cp-close">✕</button>
+        <h2>Elegir servicio</h2>
+        <div class="picker-list">
+          ${servicios.map(s => `
+            <div class="picker-item" data-id="${s.id}">
+              <div class="picker-info">
+                <div class="picker-name">🔴 ${esc(s.nombre)}</div>
+                <div class="picker-meta">${fmt(s.valorMargen || 0)}</div>
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', h);
+
+  const cerrar = () => document.querySelector('#m-cita-pick')?.remove();
+  document.querySelector('#cp-close').onclick = cerrar;
+  document.querySelector('#m-cita-pick').onclick = e => {
+    if(e.target.id === 'm-cita-pick') cerrar();
+  };
+
+  document.querySelectorAll('#m-cita-pick .picker-item').forEach(el => {
+    el.onclick = () => {
+      const id = el.dataset.id;
+      const s = window.DB.products.find(x => x.id === id);
+      cerrar();
+
+      const c = calc(s);
+      _citaServicios.push({
+        productoId: s.id,
+        cantidad: 1,
+        precioUnitario: c.precioVenta
+      });
+      renderNcServicios();
+    };
+  });
+}
+
+function guardarNuevaCita(){
+  if(!_citaClienteId){
+    return toast('⚠️ Elegí un cliente');
+  }
+  if(!_citaServicios.length){
+    return toast('⚠️ Agregá al menos un servicio');
+  }
+
+  const fecha = document.querySelector('#nc-fecha').value;
+  const hora = document.querySelector('#nc-hora').value;
+
+  if(!fecha) return toast('⚠️ Poné la fecha');
+  if(!hora) return toast('⚠️ Poné la hora');
+
+  const cliente = window.DB.clients.find(c => c.id === _citaClienteId);
+
+  let total = 0;
+  let ganancia = 0;
+
+  const items = _citaServicios.map(item => {
+    const p = window.DB.products.find(x => x.id === item.productoId);
+    const c = calc(p);
+    const sub = item.cantidad * item.precioUnitario;
+    const ganItem = sub - (c.costoU * item.cantidad);
+
+    total += sub;
+    ganancia += ganItem;
+
+    return {
+      productoId: item.productoId,
+      nombre: p.nombre,
+      cantidad: item.cantidad,
+      precioUnitario: item.precioUnitario,
+      costoUnitario: c.costoU,
+      tipo: 'servicio'
+    };
+  });
+
+  const numero = generarNumeroPedido(fecha) + '-CITA';
+  const tasaSnap = Number(window.DB.settings.tasaDia) || 0;
+  const refSnap = window.DB.settings.refCurrency || null;
+
+  const cita = {
+    id: 'cita_' + uid(),
+    tipo: 'cita',
+    numero,
+    fecha: fecha + 'T' + hora,
+    fechaCita: fecha,
+    horaCita: hora,
+    clienteId: _citaClienteId,
+    clienteNombre: cliente ? cliente.nombre : '',
+    items,
+    total,
+    ganancia,
+    estado: 'activo',
+    pagado: false,
+    completado: false,
+    tasaSnapshot: tasaSnap > 0 ? tasaSnap : null,
+    refCurrencySnapshot: tasaSnap > 0 ? refSnap : null
+  };
+
+  window.DB.orders.push(cita);
+  saveDB();
+
+  document.querySelector('#m-nueva-cita')?.remove();
+  renderOrders();
+
+  toast(`✅ Cita agendada para ${fecha.split('-').reverse().slice(0,2).join('/')} a las ${hora}`);
+  if(navigator.vibrate) navigator.vibrate(20);
 }
