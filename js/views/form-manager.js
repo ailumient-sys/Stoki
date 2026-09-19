@@ -3,6 +3,14 @@ let _fiTipo='producto', _fiEditId=null, _fiFotos=[], _fiFotoP=0, _fiCatId=null, 
 const FI_MAX=6, FI_TP=420, FI_CP=0.72, FI_TS=320, FI_CS=0.65;
 
 function abrirFormItem(tipo, editId){
+  try{
+    _abrirFormItemInterno(tipo, editId);
+  }catch(e){
+    alert('ERROR en abrirFormItem:\n' + (e.message || String(e)) + '\n\nStack: ' + (e.stack || 'sin stack'));
+  }
+}
+
+function _abrirFormItemInterno(tipo, editId){
   _fiTipo = tipo || 'producto';
   _fiEditId = editId || null;
   _fiFotos = []; _fiFotoP = 0; _fiCatId = null; _fiMTipo = 'pct-unidad';

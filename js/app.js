@@ -689,10 +689,14 @@ document.addEventListener('click', e => {
    Sobreescribe el form viejo con el nuevo de tipos
    ═══════════════════════════════════════════ */
 window.openAddForm = function(){
-  if(typeof abrirFormItem === 'function'){
-    abrirFormItem('producto', null);
-  } else {
-    console.warn('[Override] abrirFormItem no definida');
+  try{
+    if(typeof abrirFormItem === 'function'){
+      abrirFormItem('producto', null);
+    } else {
+      alert('DEBUG: abrirFormItem NO está definida');
+    }
+  }catch(e){
+    alert('ERROR en openAddForm:\n' + (e.message || String(e)) + '\n\nStack: ' + (e.stack || 'sin stack'));
   }
 };
 
