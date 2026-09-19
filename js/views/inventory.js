@@ -549,3 +549,15 @@ document.addEventListener('click', e => {
     console.warn('[Filtro] abrirFiltroInventario no definida');
   }
 }, true);
+/* ==== INV_TABS_DELEGATION v2 ==== */
+document.addEventListener('click', function(e){
+  var tab = e.target.closest('.inv-tab');
+  if(!tab) return;
+  var tipo = tab.dataset.tipo;
+  if(!tipo) return;
+  if(typeof invFiltroTipo !== 'undefined'){
+    invFiltroTipo = tipo;
+    if(typeof renderInventario === 'function') renderInventario();
+    if(navigator.vibrate) navigator.vibrate(10);
+  }
+}, true);
