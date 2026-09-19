@@ -696,6 +696,17 @@ document.addEventListener('click', e => {
    Resuelve taps que no responden por re-render
    ═══════════════════════════════════════════ */
 document.addEventListener('click', function(e){
+  /* Botón nueva cita */
+  if(e.target.closest('#cita-nueva')){
+    e.preventDefault(); e.stopPropagation();
+    if(typeof abrirNuevaCita === 'function'){
+      abrirNuevaCita();
+    } else {
+      alert('DEBUG: abrirNuevaCita NO EXISTE');
+    }
+    return;
+  }
+
   /* Tabs de citas/pedidos */
   var tab = e.target.closest('.orders-tab[data-ovista]');
   if(tab){

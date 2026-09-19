@@ -286,12 +286,15 @@ function guardarCierreDiario(ticketsHoy){
    Guardar cierre sin argumentos (para event delegation)
    ═══════════════════════════════════════════ */
 function guardarCierreActual(){
-  const hoy = todayISO();
-  const ticketsHoy = (window.DB.tickets || []).filter(t => t.fecha.slice(0, 10) === hoy);
-
-  guardarCierreDiario(ticketsHoy);
-
-  /* Cerrar el modal */
-  const el = document.querySelector('#m-cierre');
-  if(el) el.remove();
+  try{
+    alert('DEBUG 1: guardarCierreActual se llamó');
+    const hoy = todayISO();
+    const ticketsHoy = (window.DB.tickets || []).filter(t => t.fecha.slice(0, 10) === hoy);
+    guardarCierreDiario(ticketsHoy);
+    const el = document.querySelector('#m-cierre');
+    if(el) el.remove();
+    alert('DEBUG 2: cierre guardado OK');
+  }catch(err){
+    alert('DEBUG ERROR: ' + (err.message || String(err)));
+  }
 }
