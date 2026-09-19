@@ -146,10 +146,9 @@ function pvItemHTML(p){
   const c = calc(p);
   const foto = getFotoPrincipal(p);
   const inicial = esc((p.nombre || '?').charAt(0).toUpperCase());
+  const ti = tipoInfo(p);
 
-  const thumbStyle = foto
-    ? `background-image:url('${foto}')`
-    : '';
+  const thumbStyle = foto ? `background-image:url('${foto}')` : '';
 
   const enCarrito = (window.CARRITO.items || []).find(i => i.productoId === p.id);
   const cantCarrito = enCarrito ? enCarrito.cantidad : 0;
@@ -158,15 +157,23 @@ function pvItemHTML(p){
     ? `<span class="pv-item-badge">${cantCarrito}</span>`
     : '';
 
+  /* Mostrar precio con unidad si es producto/material fraccionado */
+  const unidad = p.unidad || 'unidad';
+  let precioTxt = fmt(c.precioVenta);
+  if(unidad !== 'unidad' && (c.tipo === 'producto' || c.tipo === 'material')){
+    precioTxt = `${fmt(c.precioVenta)}/${unidadInfo(unidad).abreviacion}`;
+  }
+
   return `
     <div class="pv-item" data-add="${p.id}">
       ${badge}
+      <span class="pv-item-tipo" style="background:${ti.color}">${ti.emoji}</span>
       <div class="pv-item-thumb" style="${thumbStyle}">
         ${foto ? '' : inicial}
       </div>
       <div class="pv-item-info">
         <div class="pv-item-name">${esc(p.nombre)}</div>
-        <div class="pv-item-price">${fmt(c.precioVenta)}</div>
+        <div class="pv-item-price">${precioTxt}</div>
       </div>
     </div>`;
 }
