@@ -188,7 +188,7 @@ async function exportarInventarioPDF(){
 
   const productos = window.DB.products || [];
   if(!productos.length){
-    toast('⚠️ No hay productos para exportar');
+    toast('⚠️ No hay ítems para exportar');
     return;
   }
 
@@ -278,7 +278,7 @@ async function exportarCatalogoPDF(){
 
   const productos = (window.DB.products || []).filter(p => calc(p).stock > 0);
   if(!productos.length){
-    toast('⚠️ No hay productos con stock para el catálogo');
+    toast('⚠️ No hay ítems con stock para el catálogo');
     return;
   }
 
@@ -704,7 +704,7 @@ async function exportarConOpciones(tipo){
 async function generarInventarioPDF(op){
   const productos = window.DB.products || [];
   if(!productos.length){
-    toast('⚠️ No hay productos para exportar');
+    toast('⚠️ No hay ítems para exportar');
     return;
   }
 
@@ -807,7 +807,7 @@ async function generarCatalogoPDF(op, noPreview){
   });
 
   if(!productos.length){
-    toast('⚠️ No hay productos para el catálogo');
+    toast('⚠️ No hay ítems para el catálogo');
     return;
   }
 

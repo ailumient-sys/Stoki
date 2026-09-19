@@ -5,23 +5,56 @@ Formato basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/).
 
 ---
 
-## [v15] — En desarrollo
+## [v15] — 19/09/2026
 
-### Fase 0 — Core (COMPLETA)
-- `js/core/types.js` — constantes de tipos, unidades, márgenes
-- `js/calc.js` — motor con 4 ramas (producto, material, receta, servicio)
-- Explosión de componentes y sub-recetas
-- `js/core/storage.js` — migración v14 → v15
-- Campo `movimientos` en DB
-- Compatibilidad total con productos existentes
+Versión mayor con sistema de tipos de ítem y varias features nuevas.
 
-### Pendiente
-- Fase 1: Formularios por tipo
-- Fase 2: Vistas de uso
-- Fase 3: Pedidos, citas, restock
-- Fase 4: Documentos
-- Fase 5: Transversal
-- Fase 6: Pulido
+### Tipos de ítem
+- 🟢 **Producto** — compra y reventa directa
+- 🔵 **Material** — insumo (con unidad: g, kg, ml, l, m, cm)
+- 🟣 **Receta** — combina materiales, con sub-recetas (1 nivel)
+- 🔴 **Servicio** — trabajo/tiempo, con consumibles opcionales
+
+### Agregado
+- Form unificado con selector de tipo (Opción C)
+- Motor `calc()` con 4 ramas + explosión de componentes
+- Pestañas por tipo en Inventario
+- Cards con badge de tipo en Vender
+- Carrito fraccionado (kg/g/m) con modal de cantidad
+- Detalle diferente por tipo (termómetro solo en productos)
+- Reserva de materiales al hacer pedidos con recetas
+- Restock separado en menú Más con filtro y proveedor
+- Citas como pestaña dentro de Pedidos
+- Tickets y facturas con formato de unidad fraccionada
+- Cierre diario con desglose por tipo
+- Movimientos (propinas/mermas) con cantidad
+- Libro contable PDF con movimientos y resultado del día
+- Catálogo PDF con servicios y precio por kg
+- Estadísticas con filtro por tipo + "Rentabilidad por tipo"
+- Búsqueda global con emoji de tipo
+- Onboarding completo (8 slides + saltar)
+- Ayuda con secciones "Tipos de ítem" y "Propinas y pérdidas"
+- Exportar lista de compras (PDF con casillas)
+- Historial de precios de materiales
+- Historial de cierres con agrupación por mes
+- Mini-modal del cierre (hoy / historial)
+- Botón "Nuevo cliente" en pestaña Clientes
+
+### Cambiado
+- Márgenes simplificados a 4 tipos: % × unidad, $ × unidad, $ × lote, precio fijo
+- "Unidades compradas" → "Stock" en formularios
+- Restock se movió a módulo independiente
+- Selector de tipo en lugar de tabs en formularios
+- Auto-open de overlays con MutationObserver (previene bug recurrente)
+
+### Eliminado
+- Campo "restockeable" (reemplazado por lógica de tipos)
+- Formatos de margen viejos (porcentaje, fijo, precio)
+
+### Notas
+- Migración automática v14 → v15 (productos existentes → tipo 'producto')
+- Backup v15 renombrado como 'backup-completo-v15'
+- Totalmente compatible con backups pre-v15
 
 ---
 

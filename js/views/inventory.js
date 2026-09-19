@@ -198,7 +198,7 @@ function buildInventarioToolbar(){
       <div class="inv-search">
         <input type="text"
                id="inv-search-input"
-               placeholder="Buscar producto..."
+               placeholder="Buscar en inventario..."
                autocomplete="off"
                value="${esc(invBusqueda)}"
                style="padding-right:80px">

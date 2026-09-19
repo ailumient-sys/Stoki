@@ -155,6 +155,11 @@ window.STOKI_LIC = {
 async function verificarLicencia(){
   if(!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()){
     window.STOKI_LIC = { activa: true, trial: false, bloqueada: false, diasRestantes: 999, tipo: 'dev', deviceId: 'dev-browser' };
+    return window.STOKI_LIC;
+  }
+
+  if(!window.Capacitor || !window.Capacitor.isNativePlatform || !window.Capacitor.isNativePlatform()){
+    window.STOKI_LIC = { activa: true, trial: false, bloqueada: false, diasRestantes: 999, tipo: 'dev', deviceId: 'dev-browser' };
     console.log('🔓 Modo dev: licencia saltada');
     return window.STOKI_LIC;
   }
