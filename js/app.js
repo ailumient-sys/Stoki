@@ -73,6 +73,15 @@ function initSwipe(){
   if(!views) return;
 
   views.addEventListener('touchstart', e => {
+    /* Ignorar si el toque empieza sobre pestañas internas */
+    if(e.target.closest('.inv-tabs') ||
+       e.target.closest('.pv-cat-header') ||
+       e.target.closest('.period') ||
+       e.target.closest('.inv-chips')){
+      swiping = false;
+      return;
+    }
+
     swipeX = e.touches[0].clientX;
     swipeY = e.touches[0].clientY;
     swiping = true;
@@ -204,12 +213,8 @@ function initGestosBloqueados(){
 
   document.addEventListener('gesturestart', e => e.preventDefault());
 
-  let lastTouchEnd = 0;
-  document.addEventListener('touchend', e => {
-    const now = Date.now();
-    if(now - lastTouchEnd <= 300) e.preventDefault();
-    lastTouchEnd = now;
-  }, { passive: false });
+  /* El preventDefault global fue removido: bloqueaba clicks en botones nuevos.
+     El CSS `touch-action: manipulation` ya evita el doble-tap zoom. */
 }
 
 function initFab(){
