@@ -747,4 +747,61 @@ document.addEventListener('click', function(e){
     if(typeof abrirRestockItem === 'function') abrirRestockItem(rpadd.dataset.rpadd);
     return;
   }
+
+  /* Exportar lista de compras */
+  if(e.target.closest('#rp-exportar')){
+    e.preventDefault(); e.stopPropagation();
+    if(typeof exportarListaCompras === 'function') exportarListaCompras();
+    return;
+  }
+
+  /* Historial de cierres desde el cierre */
+  if(e.target.closest('#cie-historial')){
+    e.preventDefault(); e.stopPropagation();
+    var modalCierre = document.querySelector('#m-cierre');
+    if(modalCierre) modalCierre.remove();
+    setTimeout(function(){
+      if(typeof abrirCierresHistorial === 'function') abrirCierresHistorial();
+    }, 150);
+    return;
+  }
+
+  /* Mini-modal selector */
+  if(e.target.closest('#cs-hoy')){
+    e.preventDefault(); e.stopPropagation();
+    var sel1 = document.querySelector('#m-cierre-selector');
+    if(sel1) sel1.remove();
+    setTimeout(function(){
+      if(typeof abrirCierreDiario === 'function') abrirCierreDiario();
+    }, 150);
+    return;
+  }
+
+  if(e.target.closest('#cs-historial')){
+    e.preventDefault(); e.stopPropagation();
+    var sel2 = document.querySelector('#m-cierre-selector');
+    if(sel2) sel2.remove();
+    setTimeout(function(){
+      if(typeof abrirCierresHistorial === 'function') abrirCierresHistorial();
+    }, 150);
+    return;
+  }
+
+  /* Tabs de filtro de stats por tipo */
+  var stTab = e.target.closest('[data-sttipo]');
+  if(stTab){
+    e.preventDefault(); e.stopPropagation();
+    if(typeof statsPageFiltroTipo !== 'undefined'){
+      window.statsPageFiltroTipo = stTab.dataset.sttipo;
+    }
+    if(typeof renderStatsPage === 'function') renderStatsPage();
+    return;
+  }
+
+  /* Botón nuevo cliente */
+  if(e.target.closest('#cli-nuevo')){
+    e.preventDefault(); e.stopPropagation();
+    if(typeof openClientNew === 'function') openClientNew();
+    return;
+  }
 }, true);

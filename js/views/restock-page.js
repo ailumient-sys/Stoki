@@ -63,6 +63,11 @@ function renderRestockPage(){
     return a.nombre.localeCompare(b.nombre, 'es');
   });
 
+  const bajosCount = todos.filter(p => {
+    const c = calc(p);
+    return c.estadoStock === 'urgente' || c.estadoStock === 'agotado' || c.estadoStock === 'atencion';
+  }).length;
+
   const filtrosHTML = `
     <div class="inv-tabs" style="margin-bottom:8px">
       <button class="inv-tab ${_rpFiltro==='bajo'?'active':''}" data-rpfiltro="bajo" type="button">⚠️ Bajo stock</button>
@@ -71,6 +76,11 @@ function renderRestockPage(){
     <div class="inv-search" style="margin-bottom:8px">
       <input type="text" id="rp-search" placeholder="Buscar..." autocomplete="off" value="${esc(_rpBusqueda)}">
     </div>
+    ${bajosCount > 0 ? `
+      <button class="btn-ghost" id="rp-exportar" style="margin-bottom:10px">
+        📄 Exportar lista de compras (${bajosCount})
+      </button>
+    ` : ''}
   `;
 
   const itemsHTML = lista.length
@@ -122,6 +132,14 @@ function bindRestockPage(){
       renderRestockPage();
       const nuevo = document.querySelector('#rp-search');
       if(nuevo){ nuevo.focus(); nuevo.setSelectionRange(pos, pos); }
+    };
+  }
+
+  /* Exportar lista */
+  const btnExp = document.querySelector('#rp-exportar');
+  if(btnExp){
+    btnExp.onclick = () => {
+      if(typeof exportarListaCompras === 'function') exportarListaCompras();
     };
   }
 
@@ -386,5 +404,191 @@ function guardarRestockItem(){
 
   const provMsg = _rpProvId ? '' : '';
   toast(`✅ ${fmtCantidadUnidad(cant, p.unidad || 'unidad')} de ${p.nombre}`);
+  if(navigator.vibrate) navigator.vibrate(20);
+}
+
+/* ═══════════════════════════════════════════
+   EXPORTAR LISTA DE COMPRAS
+   ═══════════════════════════════════════════ */
+async function exportarListaCompras(){
+  if(typeof window.jspdf === 'undefined'){
+    toast('⚠️ Generador PDF no cargado');
+    return;
+  }
+
+  const todos = (window.DB.products || []).filter(p => {
+    const t = tipoDe(p);
+    return t === 'producto' || t === 'material';
+  });
+
+  const bajos = todos.filter(p => {
+    const c = calc(p);
+    return c.estadoStock === 'urgente' || c.estadoStock === 'agotado' || c.estadoStock === 'atencion';
+  });
+
+  if(!bajos.length) return toast('⚠️ No hay ítems con stock bajo');
+
+  /* Ordenar: más bajo primero */
+  bajos.sort((a, b) => {
+    const ca = calc(a);
+    const cb = calc(b);
+    const pa = { agotado:0, urgente:1, atencion:2, ok:3 }[ca.estadoStock] || 4;
+    const pb = { agotado:0, urgente:1, atencion:2, ok:3 }[cb.estadoStock] || 4;
+    if(pa !== pb) return pa - pb;
+    return a.nombre.localeCompare(b.nombre, 'es');
+  });
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const M = 15;
+
+  const VERDE = [34, 197, 94];
+  const NEGRO = [26, 26, 26];
+  const GRIS  = [130, 130, 130];
+  const GRIS2 = [245, 246, 248];
+  const BLANCO = [255, 255, 255];
+  const ROJO  = [239, 68, 68];
+  const AMBER = [245, 158, 11];
+
+  const negocio = window.DB.settings.business || {};
+  const nombreNegocio = negocio.nombre || 'Mi negocio';
+  const fecha = new Date().toLocaleDateString('es-VE', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  });
+
+  /* HEADER */
+  doc.setFillColor(...VERDE);
+  doc.rect(0, 0, W, 22, 'F');
+
+  doc.setTextColor(...BLANCO);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(20);
+  doc.text('Stoki', M, 14);
+
+  doc.setFontSize(14);
+  doc.text('Lista de compras', W - M, 14, { align: 'right' });
+
+  doc.setTextColor(...NEGRO);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.text(nombreNegocio, M, 32);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(...GRIS);
+  doc.setFontSize(9);
+  doc.text(`${fecha} · ${bajos.length} ítem${bajos.length !== 1 ? 's' : ''}`, W - M, 32, { align: 'right' });
+
+  let y = 44;
+
+  /* TABLA */
+  doc.setFillColor(...VERDE);
+  doc.rect(M, y, W - 2 * M, 8, 'F');
+
+  doc.setTextColor(...BLANCO);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9);
+  doc.text('COMPRAR', M + 3, y + 5.5);
+  doc.text('PRODUCTO', M + 22, y + 5.5);
+  doc.text('STOCK', W - M - 60, y + 5.5, { align: 'center' });
+  doc.text('ÚLTIMO PAGO', W - M - 3, y + 5.5, { align: 'right' });
+
+  y += 8;
+
+  bajos.forEach((p, idx) => {
+    if(y > H - 25){
+      doc.addPage();
+      y = 20;
+
+      doc.setFillColor(...VERDE);
+      doc.rect(M, y, W - 2 * M, 8, 'F');
+      doc.setTextColor(...BLANCO);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('COMPRAR', M + 3, y + 5.5);
+      doc.text('PRODUCTO', M + 22, y + 5.5);
+      doc.text('STOCK', W - M - 60, y + 5.5, { align: 'center' });
+      doc.text('ÚLTIMO PAGO', W - M - 3, y + 5.5, { align: 'right' });
+      y += 8;
+    }
+
+    if(idx % 2 === 0){
+      doc.setFillColor(250, 250, 250);
+      doc.rect(M, y, W - 2 * M, 8, 'F');
+    }
+
+    /* Checkbox */
+    doc.setDrawColor(...GRIS);
+    doc.setLineWidth(0.3);
+    doc.rect(M + 3, y + 1.5, 5, 5, 'S');
+
+    /* Nombre */
+    doc.setTextColor(...NEGRO);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    const nombreCorto = p.nombre.length > 40 ? p.nombre.slice(0, 40) + '…' : p.nombre;
+    doc.text(nombreCorto, M + 22, y + 5.5);
+
+    /* Stock */
+    const c = calc(p);
+    const u = unidadInfo(p.unidad || 'unidad');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    const colorStock = c.estadoStock === 'agotado' ? ROJO : c.estadoStock === 'urgente' ? ROJO : AMBER;
+    doc.setTextColor(...colorStock);
+    const stockTxt = fmtCantidadUnidad(c.stock, p.unidad || 'unidad');
+    doc.text(stockTxt, W - M - 60, y + 5.5, { align: 'center' });
+
+    /* Último pago */
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...GRIS);
+    const ultimoLote = (p.lotes || [])[p.lotes.length - 1];
+    const ultimoPrecio = ultimoLote ? `${fmt(ultimoLote.costoUnitario)}/${u.abreviacion}` : '—';
+    doc.text(ultimoPrecio, W - M - 3, y + 5.5, { align: 'right' });
+
+    doc.setDrawColor(230, 230, 230);
+    doc.setLineWidth(0.1);
+    doc.line(M, y + 8, W - M, y + 8);
+
+    y += 8;
+  });
+
+  /* Nota al pie */
+  if(y > H - 40){
+    doc.addPage();
+    y = 20;
+  }
+
+  y += 6;
+  doc.setFillColor(...GRIS2);
+  doc.roundedRect(M, y, W - 2 * M, 16, 3, 3, 'F');
+
+  doc.setTextColor(...GRIS);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(9);
+  doc.text('Marcá cada ítem cuando lo compres y anotá el precio actual.', M + 6, y + 7);
+  doc.text('Registralo en Stoki → Reabastecer.', M + 6, y + 13);
+
+  /* FOOTER */
+  const totalPags = doc.internal.getNumberOfPages();
+  for(let i = 1; i <= totalPags; i++){
+    doc.setPage(i);
+    doc.setDrawColor(...VERDE);
+    doc.setLineWidth(0.3);
+    doc.line(M, H - 12, W - M, H - 12);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(...GRIS);
+    doc.text('Generado con Stoki', M, H - 6);
+    doc.text(`Página ${i} de ${totalPags}`, W - M, H - 6, { align: 'right' });
+  }
+
+  const nombreArchivo = `ListaCompras-${todayISO()}.pdf`;
+  previsualizarPDF(doc, nombreArchivo, 'Lista de compras');
+
   if(navigator.vibrate) navigator.vibrate(20);
 }

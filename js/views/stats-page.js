@@ -539,3 +539,7 @@ function statsPageRentabilidadPorTipo(){
       ${filasHTML}
     </div>`;
 }
+
+
+/* Exponer para event delegation global */
+window.statsPageFiltroTipo = statsPageFiltroTipo;

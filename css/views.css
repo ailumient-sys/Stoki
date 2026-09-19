@@ -1729,3 +1729,9 @@
 .rpt-valor{text-align:right;flex:0 0 auto;min-width:80px}
 .rpt-valor b{display:block;font-size:12px;font-weight:900;font-variant-numeric:tabular-nums}
 .rpt-valor span{font-size:10px;color:var(--dim);font-weight:700}
+
+.hist-precio-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:12px;border-bottom:1px solid rgba(42,49,64,.4)}
+.hist-precio-row:last-child{border-bottom:none}
+.hist-precio-fecha{color:var(--dim);font-weight:700;flex:0 0 auto;min-width:50px}
+.hist-precio-monto{font-weight:900;font-variant-numeric:tabular-nums;flex:1;text-align:center;color:var(--txt)}
+.hist-precio-flecha{font-size:14px;font-weight:900;flex:0 0 auto;min-width:20px;text-align:right}

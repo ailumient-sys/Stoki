@@ -61,7 +61,7 @@ function openMoreMenu(){
       } else if(action === 'backup'){
         setTimeout(() => abrirPanelBackup(), 120);
       } else if(action === 'cierre'){
-        setTimeout(() => abrirCierreDiario(), 120);
+        setTimeout(() => abrirModalCierreSelector(), 120);
       } else if(action === 'restock'){
         setTimeout(() => {
           const v = document.querySelector('#v-restock');

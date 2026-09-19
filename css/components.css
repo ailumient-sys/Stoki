@@ -1026,3 +1026,14 @@ body.lic-bloqueada .toast{
 .cierre-resultado-label{font-size:10px;font-weight:900;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
 .cierre-resultado-valor{font-size:28px;font-weight:900;color:var(--green);font-variant-numeric:tabular-nums;letter-spacing:-1px;line-height:1.1}
 .cierre-resultado-sub{font-size:11px;color:var(--dim);font-weight:700;margin-top:4px}
+
+.hist-cierres-list{max-height:60dvh;overflow-y:auto;margin-top:8px}
+.hist-mes-grupo{margin-bottom:16px}
+.hist-mes-titulo{font-size:11px;font-weight:900;color:var(--dim);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;padding-left:4px}
+.hist-cierre-row{display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border-radius:12px;margin-bottom:6px;cursor:pointer}
+.hist-cierre-row:active{background:var(--bg4)}
+.hist-cierre-fecha{font-family:'Courier New',monospace;font-size:13px;font-weight:900;color:var(--txt);flex:0 0 auto;min-width:44px}
+.hist-cierre-info{flex:1;min-width:0}
+.hist-cierre-total{font-size:14px;font-weight:900;color:var(--green);font-variant-numeric:tabular-nums}
+.hist-cierre-ganancia{font-size:11px;color:var(--dim);font-weight:700;margin-top:2px}
+.hist-cierre-tickets{font-size:11px;color:var(--dim);font-weight:700;flex:0 0 auto}

@@ -406,6 +406,8 @@ function buildDetailMaterial(p, c){
 
     ${usosHTML}
 
+    ${buildHistorialPreciosMaterial(p)}
+
     <button class="btn-main" id="d-stock">➕ Agregar stock</button>
     <button class="btn-ghost" id="d-edit">✏️ Editar material</button>
     <button class="btn-ghost" id="d-merma" style="color:var(--amber)">⚠️ Registrar pérdida</button>
@@ -597,4 +599,48 @@ function buildDetailServicio(p, c){
     <button class="btn-ghost" id="d-edit">✏️ Editar servicio</button>
     <button class="btn-ghost btn-danger" id="d-del">Eliminar servicio</button>
   `;
+}
+
+/* =========================================================
+   HISTORIAL DE PRECIOS DE UN MATERIAL
+   ========================================================= */
+function buildHistorialPreciosMaterial(p){
+  const lotes = Array.isArray(p.lotes) ? p.lotes : [];
+  if(lotes.length < 2) return '';
+
+  /* Ordenar descendente por fecha */
+  const ordenados = [...lotes].sort((a, b) => a.fecha < b.fecha ? 1 : -1);
+
+  const ui = unidadInfo(p.unidad || 'unidad');
+
+  const filas = ordenados.map((l, i) => {
+    const anterior = ordenados[i + 1];
+    let flecha = '─';
+    let colorFlecha = 'var(--dim)';
+
+    if(anterior){
+      if(l.costoUnitario > anterior.costoUnitario){
+        flecha = '↑';
+        colorFlecha = 'var(--red)';
+      } else if(l.costoUnitario < anterior.costoUnitario){
+        flecha = '↓';
+        colorFlecha = 'var(--green)';
+      }
+    }
+
+    const fecha = l.fecha ? l.fecha.split('-').reverse().slice(0,2).join('/') : '—';
+
+    return `
+      <div class="hist-precio-row">
+        <span class="hist-precio-fecha">${fecha}</span>
+        <span class="hist-precio-monto">${fmt(l.costoUnitario)}/${ui.abreviacion}</span>
+        <span class="hist-precio-flecha" style="color:${colorFlecha}">${flecha}</span>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="detail-lotes">
+      <div class="detail-lotes-title">📈 Historial de precios</div>
+      ${filas}
+    </div>`;
 }

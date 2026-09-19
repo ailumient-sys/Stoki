@@ -200,6 +200,10 @@ function abrirCierreDiario(){
           ${cierreGuardado ? '🔄 Actualizar cierre' : '✅ Cerrar el día'}
         </button>
 
+        <button class="btn-ghost" id="cie-historial" style="margin-top:8px">
+          📚 Ver cierres anteriores
+        </button>
+
         <button class="btn-ghost" id="cie-movimiento" style="margin-top:8px">
           💰 Registrar movimiento
         </button>
@@ -225,6 +229,13 @@ function abrirCierreDiario(){
   document.querySelector('#cie-guardar').addEventListener('click', () => {
     guardarCierreDiario(ticketsHoy);
     cerrar();
+  });
+
+  document.querySelector('#cie-historial').addEventListener('click', () => {
+    cerrar();
+    setTimeout(() => {
+      if(typeof abrirCierresHistorial === 'function') abrirCierresHistorial();
+    }, 150);
   });
 
   document.querySelector('#cie-movimiento').addEventListener('click', () => {
