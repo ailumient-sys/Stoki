@@ -6,7 +6,7 @@
 const STORAGE_KEY     = 'stocki_v1';
 const SESSION_KEY     = 'stoki_sesion_compra';
 const CARRITO_KEY     = 'stoki_carrito';
-const STORAGE_VERSION = 15;
+const STORAGE_VERSION = 14;
 
 const FOTOS_DB      = 'stoki-fotos';
 const FOTOS_STORE   = 'fotos';
@@ -45,8 +45,7 @@ window.DB = {
   ventaCounter: {},
   historialCompras: [],
   shoppingLists: [],
-  cierres: {},
-  movimientos: []
+  cierres: {}
 };
 
 window.SESSION      = null;
@@ -364,61 +363,6 @@ async function loadDB(){
 /* =========================================================
    MIGRACIONES
    ========================================================= */
-function migrateToTipos(){
-  /* Cada producto existente pasa a tipo 'producto' con unidad 'unidad'.
-     Los tipos de margen viejos se mapean a los nuevos. */
-
-  window.DB.products = (window.DB.products || []).map(p => {
-    /* Tipo */
-    if(!p.tipo) p.tipo = 'producto';
-
-    /* Unidad */
-    if(!p.unidad) p.unidad = 'unidad';
-
-    /* Stock infinito */
-    if(typeof p.stockInfinito === 'undefined') p.stockInfinito = false;
-
-    /* Vendible suelto (solo aplica a materiales) */
-    if(typeof p.vendibleSuelto === 'undefined') p.vendibleSuelto = false;
-
-    /* También material (producto que se usa en recetas) */
-    if(typeof p.tambienMaterial === 'undefined') p.tambienMaterial = false;
-
-    /* Migrar tipo de margen viejo → nuevo */
-    const tipoViejo = p.tipoMargen;
-    if(tipoViejo && tipoViejo !== 'pct-unidad' && tipoViejo !== 'fijo-unidad' && tipoViejo !== 'fijo-lote' && tipoViejo !== 'precio-fijo'){
-      if(tipoViejo === 'porcentaje'){
-        p.tipoMargen = 'pct-unidad';
-      } else if(tipoViejo === 'fijo'){
-        p.tipoMargen = 'fijo-unidad';
-      } else if(tipoViejo === 'fijo-lote'){
-        p.tipoMargen = 'fijo-lote';
-      } else if(tipoViejo === 'precio' || tipoViejo === 'precio-lote'){
-        p.tipoMargen = 'precio-fijo';
-      } else {
-        p.tipoMargen = 'pct-unidad';
-      }
-    }
-
-    /* Receta: componentes */
-    if(p.tipo === 'receta' && !Array.isArray(p.componentes)){
-      p.componentes = [];
-    }
-
-    /* Servicio: consumibles */
-    if(p.tipo === 'servicio' && !Array.isArray(p.consumibles)){
-      p.consumibles = [];
-    }
-
-    return p;
-  });
-
-  /* Inicializar arrays faltantes del DB */
-  if(!Array.isArray(window.DB.movimientos)) window.DB.movimientos = [];
-
-  console.log('✅ Migración v15 completa: tipos agregados');
-}
-
 async function correrMigraciones(){
   console.log('🔄 Migrando datos de v' + window.DB.version);
 
@@ -433,7 +377,6 @@ async function correrMigraciones(){
   if(window.DB.version < 10) migrateToSupplierProducts();
   if(window.DB.version < 11) migrateToFotosIndexedDB();
   if(window.DB.version < 13) migrateToCategories();
-  if(window.DB.version < 15) migrateToTipos();
 
   migrateCategoriasEmoji();
 
