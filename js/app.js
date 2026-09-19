@@ -682,3 +682,24 @@ document.addEventListener('click', e => {
     img.classList.toggle('zoom');
   }
 });
+
+
+/* ═══════════════════════════════════════════
+   FORM MANAGER OVERRIDE
+   Sobreescribe el form viejo con el nuevo de tipos
+   ═══════════════════════════════════════════ */
+window.openAddForm = function(){
+  if(typeof abrirFormItem === 'function'){
+    abrirFormItem('producto', null);
+  } else {
+    console.warn('[Override] abrirFormItem no definida');
+  }
+};
+
+window.openEditForm = function(id){
+  if(typeof abrirFormItem === 'function'){
+    abrirFormItem('producto', id);
+  } else {
+    console.warn('[Override] abrirFormItem no definida');
+  }
+};

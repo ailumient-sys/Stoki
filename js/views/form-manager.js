@@ -202,10 +202,3 @@ async function guardarFormItem(){
   toast('✅ Guardado');
   if(navigator.vibrate) navigator.vibrate(20);
 }
-
-/* ═══════════════════════════════════════════
-   OVERRIDE — FAB y botones "+" usan el nuevo form
-   ═══════════════════════════════════════════ */
-window.openAddForm = function(){
-  abrirFormItem('producto', null);
-};
