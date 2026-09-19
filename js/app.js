@@ -684,26 +684,3 @@ document.addEventListener('click', e => {
 });
 
 
-/* ═══════════════════════════════════════════
-   FORM MANAGER OVERRIDE
-   Sobreescribe el form viejo con el nuevo de tipos
-   ═══════════════════════════════════════════ */
-window.openAddForm = function(){
-  try{
-    if(typeof abrirFormItem === 'function'){
-      abrirFormItem('producto', null);
-    } else {
-      alert('DEBUG: abrirFormItem NO está definida');
-    }
-  }catch(e){
-    alert('ERROR en openAddForm:\n' + (e.message || String(e)) + '\n\nStack: ' + (e.stack || 'sin stack'));
-  }
-};
-
-window.openEditForm = function(id){
-  if(typeof abrirFormItem === 'function'){
-    abrirFormItem('producto', id);
-  } else {
-    console.warn('[Override] abrirFormItem no definida');
-  }
-};

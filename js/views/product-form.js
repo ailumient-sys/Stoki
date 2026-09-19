@@ -18,6 +18,10 @@ const TAM_SECUNDARIA = 320;
 const CAL_SECUNDARIA = 0.65;
 
 function openAddForm(){
+  if(typeof abrirFormItem === 'function'){
+    return abrirFormItem('producto', null);
+  }
+  /* Fallback: código viejo */
   editandoProductoId = null;
   fCategoriaId = null;
   fCostoDesconocido = false;
@@ -33,6 +37,10 @@ function openAddForm(){
 }
 
 function openEditForm(id){
+  if(typeof abrirFormItem === 'function'){
+    return abrirFormItem('producto', id);
+  }
+  /* Fallback: código viejo */
   const p = window.DB.products.find(x => x.id === id);
   if(!p) return;
 
