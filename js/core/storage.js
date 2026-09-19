@@ -721,7 +721,7 @@ async function exportBackup(){
       _fotos: window.FOTOS || {},
       _comprobantes: window.COMPROBANTES || {},
       _exportadoEn: new Date().toISOString(),
-      _tipo: 'backup-completo',
+      _tipo: 'backup-completo-v15',
       _version: STORAGE_VERSION
     };
 

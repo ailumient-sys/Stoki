@@ -91,12 +91,22 @@ function renderResultadosBusqueda(q){
           ? `<div class="gs-item-icon foto" style="background-image:url('${foto}')"></div>`
           : `<div class="gs-item-icon">${esc((p.nombre || '?').charAt(0).toUpperCase())}</div>`;
 
+        const ti = tipoInfo(p);
+        const t = tipoDe(p);
+        const unidad = p.unidad || 'unidad';
+        const stockTxt = c.stock === Infinity ? '∞' : fmtCantidadUnidad(c.stock, unidad);
+        const precioTxt = t === 'servicio'
+          ? fmt(c.precioVenta)
+          : (c.stockDisponible !== undefined
+              ? `Alcanza para ${c.stockDisponible} · ${fmt(c.precioVenta)}`
+              : `${stockTxt} · ${fmt(c.precioVenta)}`);
+
         return `
           <div class="gs-item" data-tipo="producto" data-id="${p.id}">
             ${iconHTML}
             <div class="gs-item-info">
-              <div class="gs-item-nombre">${esc(p.nombre)}</div>
-              <div class="gs-item-meta">${c.stock} u · ${fmt(c.precioVenta)}</div>
+              <div class="gs-item-nombre">${ti.emoji} ${esc(p.nombre)}</div>
+              <div class="gs-item-meta">${precioTxt}</div>
             </div>
           </div>`;
       })

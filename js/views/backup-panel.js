@@ -28,7 +28,7 @@ function abrirPanelBackup(){
         <div class="bk-stats">
           <div class="bk-stat">
             <div class="bk-stat-num">${productos}</div>
-            <div class="bk-stat-lbl">Productos</div>
+            <div class="bk-stat-lbl">Ítems</div>
           </div>
           <div class="bk-stat">
             <div class="bk-stat-num">${fotos}</div>
@@ -52,7 +52,7 @@ function abrirPanelBackup(){
           📤 Exportar backup completo
         </button>
         <div class="bk-hint">
-          Incluye productos, fotos, ventas, pedidos y configuración.
+          Incluye ítems, fotos, ventas, pedidos y configuración.
         </div>
 
         <button class="btn-ghost" id="bk-import" style="margin-top:14px">
@@ -101,7 +101,7 @@ function abrirPanelBackup(){
     const ok = await confirmarAccion({
       titulo: '¿Borrar TODO?',
       mensaje: 'Se borrarán TODOS los datos:\n' +
-               '• Productos\n' +
+               '• Ítems (productos, materiales, recetas, servicios)\n' +
                '• Ventas\n' +
                '• Pedidos\n' +
                '• Clientes\n' +

@@ -7,6 +7,7 @@
    ========================================================= */
 
 let statsPagePeriodo = 'diario';
+let statsPageFiltroTipo = 'todo';
 
 /* =========================================================
    RENDER PRINCIPAL
@@ -67,10 +68,21 @@ function renderStatsPage(){
    ========================================================= */
 function statsPageGetVentas(){
   const ventas = [];
+  const filtro = (typeof statsPageFiltroTipo !== 'undefined') ? statsPageFiltroTipo : 'todo';
+
+  /* Helper: ¿pasa el filtro? */
+  const pasa = (productoId) => {
+    if(filtro === 'todo') return true;
+    const prod = window.DB.products.find(x => x.id === productoId);
+    if(!prod) return filtro === 'producto';
+    return tipoDe(prod) === filtro;
+  };
 
   /* Tickets */
   (window.DB.tickets || []).forEach(t => {
     (t.items || []).forEach(item => {
+      if(!pasa(item.productoId)) return;
+
       const cant   = Number(item.cantidad) || 0;
       const precio = Number(item.precioUnitario) || 0;
       const costoU = Number(item.costoUnitario) || 0;
@@ -88,6 +100,8 @@ function statsPageGetVentas(){
 
   /* Ventas sueltas (formato viejo) */
   (window.DB.products || []).forEach(p => {
+    if(!pasa(p.id)) return;
+
     (p.ventas || []).forEach(v => {
       if(v.ticketId) return;
 
@@ -250,6 +264,14 @@ function statsPageHTML(labels, kpis, topU, topG, capital){
       }
     </style>
 
+    <div class="inv-tabs" style="margin-bottom:10px">
+      <button class="inv-tab ${statsPageFiltroTipo==='todo'?'active':''}" data-sttipo="todo" type="button">Todo</button>
+      <button class="inv-tab ${statsPageFiltroTipo==='producto'?'active':''}" data-sttipo="producto" type="button">🟢</button>
+      <button class="inv-tab ${statsPageFiltroTipo==='material'?'active':''}" data-sttipo="material" type="button">🔵</button>
+      <button class="inv-tab ${statsPageFiltroTipo==='receta'?'active':''}" data-sttipo="receta" type="button">🟣</button>
+      <button class="inv-tab ${statsPageFiltroTipo==='servicio'?'active':''}" data-sttipo="servicio" type="button">🔴</button>
+    </div>
+
     <div class="period" id="st-period">
       <button data-p="diario"  class="${statsPagePeriodo === 'diario'  ? 'active' : ''}">Diario</button>
       <button data-p="semanal" class="${statsPagePeriodo === 'semanal' ? 'active' : ''}">Semanal</button>
@@ -294,6 +316,7 @@ function statsPageHTML(labels, kpis, topU, topG, capital){
     </div>
 
     ${statsPageCapitalHTML(capital)}
+    ${statsPageRentabilidadPorTipo()}
     ${statsPageTopHTML('🏆 Top 10 por unidades', topU, 'unidades')}
     ${statsPageTopHTML('💰 Top 10 por ganancia', topG, 'ganancia')}
   `;
@@ -423,6 +446,16 @@ function statsPageEmptyHTML(){
    EVENTOS
    ========================================================= */
 function statsPageBindEvents(){
+  /* Tabs por tipo */
+  document.querySelectorAll('[data-sttipo]').forEach(tab => {
+    tab.onclick = () => {
+      statsPageFiltroTipo = tab.dataset.sttipo;
+      renderStatsPage();
+      if(navigator.vibrate) navigator.vibrate(10);
+    };
+  });
+
+  /* Periodo */
   const period = document.querySelector('#st-period');
   if(!period) return;
 
@@ -432,4 +465,77 @@ function statsPageBindEvents(){
     statsPagePeriodo = btn.dataset.p;
     renderStatsPage();
   });
+}
+
+/* ═══════════════════════════════════════════
+   RENTABILIDAD POR TIPO (siempre muestra los 4)
+   ═══════════════════════════════════════════ */
+function statsPageRentabilidadPorTipo(){
+  const ventas = [];
+  const acum = { producto: 0, material: 0, receta: 0, servicio: 0 };
+
+  /* Tickets */
+  (window.DB.tickets || []).forEach(t => {
+    (t.items || []).forEach(item => {
+      const prod = window.DB.products.find(x => x.id === item.productoId);
+      const tipo = prod ? tipoDe(prod) : 'producto';
+
+      const cant = Number(item.cantidad) || 0;
+      const precio = Number(item.precioUnitario) || 0;
+      const costoU = Number(item.costoUnitario) || 0;
+      const ganancia = cant * (precio - costoU);
+
+      if(acum[tipo] !== undefined) acum[tipo] += ganancia;
+    });
+  });
+
+  /* Ventas sueltas */
+  (window.DB.products || []).forEach(p => {
+    const tipo = tipoDe(p);
+    (p.ventas || []).forEach(v => {
+      if(v.ticketId) return;
+
+      const cant = Number(v.cantidad) || 0;
+      const precio = Number(v.precioUnitario) || 0;
+      const costoU = (typeof v.costoUnitario === 'number' && !isNaN(v.costoUnitario))
+        ? v.costoUnitario
+        : calc(p).costoU;
+
+      if(acum[tipo] !== undefined) acum[tipo] += cant * (precio - costoU);
+    });
+  });
+
+  const total = Object.values(acum).reduce((s, v) => s + Math.max(0, v), 0);
+
+  const filas = [
+    { tipo: 'producto', emoji: '🟢', nombre: 'Productos', valor: acum.producto },
+    { tipo: 'material', emoji: '🔵', nombre: 'Materiales', valor: acum.material },
+    { tipo: 'receta',   emoji: '🟣', nombre: 'Recetas',   valor: acum.receta },
+    { tipo: 'servicio', emoji: '🔴', nombre: 'Servicios', valor: acum.servicio }
+  ];
+
+  const filasHTML = filas.map(f => {
+    const pct = total > 0 ? (Math.max(0, f.valor) / total) * 100 : 0;
+    return `
+      <div class="rpt-row">
+        <div class="rpt-info">
+          <div class="rpt-nombre">${f.emoji} ${f.nombre}</div>
+          <div class="rpt-barra">
+            <div class="rpt-barra-fill" style="width:${pct}%;background:${TIPOS_INFO[f.tipo].color}"></div>
+          </div>
+        </div>
+        <div class="rpt-valor">
+          <b style="color:${f.valor >= 0 ? 'var(--green)' : 'var(--red)'}">
+            ${f.valor >= 0 ? '+' : ''}${fmt(f.valor)}
+          </b>
+          <span>${pct.toFixed(0)}%</span>
+        </div>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="chart-box">
+      <div class="chart-title">💡 Rentabilidad por tipo</div>
+      ${filasHTML}
+    </div>`;
 }

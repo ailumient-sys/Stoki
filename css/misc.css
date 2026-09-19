@@ -468,3 +468,6 @@ td.r, th.r{ text-align:right; }
   overscroll-behavior:contain;
   -webkit-overflow-scrolling:touch;
 }
+
+.onb-skip{position:absolute;top:calc(var(--safe-top) + 16px);right:20px;background:transparent;border:0;color:var(--dim);font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;padding:8px 12px;border-radius:8px;z-index:10}
+.onb-skip:active{background:var(--bg3);color:var(--txt)}

@@ -1719,3 +1719,13 @@
 .inv-tabs::-webkit-scrollbar{display:none}
 .inv-tab{flex:0 0 auto;touch-action:manipulation;background:var(--bg3);border:1.5px solid var(--line);color:var(--dim);border-radius:10px;padding:8px 12px;font-family:inherit;font-size:12px;font-weight:800;cursor:pointer;min-height:38px;white-space:nowrap}
 .inv-tab.active{background:var(--green);color:#04140a;border-color:var(--green)}
+
+.rpt-row{display:flex;align-items:center;gap:12px;padding:8px 6px;border-bottom:1px solid rgba(42,49,64,.4)}
+.rpt-row:last-child{border-bottom:none}
+.rpt-info{flex:1;min-width:0}
+.rpt-nombre{font-size:12px;font-weight:800;color:var(--txt);margin-bottom:4px}
+.rpt-barra{height:6px;background:var(--bg4);border-radius:4px;overflow:hidden}
+.rpt-barra-fill{height:100%;border-radius:4px;transition:width .4s}
+.rpt-valor{text-align:right;flex:0 0 auto;min-width:80px}
+.rpt-valor b{display:block;font-size:12px;font-weight:900;font-variant-numeric:tabular-nums}
+.rpt-valor span{font-size:10px;color:var(--dim);font-weight:700}

@@ -267,6 +267,56 @@ const HELP_SECCIONES = [
     ]
   },
   {
+    id: 'tipos',
+    icono: '🧩',
+    titulo: 'Tipos de ítem',
+    items: [
+      {
+        titulo: 'Producto 🟢',
+        texto: 'Comprás y revendés. Es el tipo normal de una bodega o tienda. Controla stock con FIFO, te muestra ganancia real y usa el termómetro de inversión.'
+      },
+      {
+        titulo: 'Material 🔵',
+        texto: 'Materia prima para fabricar otros productos. Ej: pan, carne, cera. NO aparece en Vender salvo que marques "Vendible suelto". Su stock se controla con unidad (g, kg, ml, m, etc.).'
+      },
+      {
+        titulo: 'Receta 🟣',
+        texto: 'Se fabrica combinando materiales. Ej: una hamburguesa lleva pan + carne + queso. No tiene stock propio: Stoki calcula cuántas podés hacer con lo que tenés. Se descuentan los materiales al vender.'
+      },
+      {
+        titulo: 'Servicio 🔴',
+        texto: 'Vendés tu trabajo (corte de cabello, masaje, consultoría). No tiene stock. Podés agregar consumibles (como una hojilla) que se descuentan automáticamente al vender.'
+      }
+    ]
+  },
+  {
+    id: 'movimientos',
+    icono: '💰',
+    titulo: 'Propinas y pérdidas',
+    items: [
+      {
+        titulo: '¿Para qué sirve?',
+        texto: 'Registrá movimientos que NO son ventas pero afectan tu caja del día. Hay 2 tipos: propinas/extras (suman) y mermas/pérdidas (restan).'
+      },
+      {
+        titulo: 'Propina o extra',
+        texto: 'Cuando un cliente te deja propina o cobraste algo extra. Se suma al resultado final del cierre.'
+      },
+      {
+        titulo: 'Merma o pérdida',
+        texto: 'Cuando se rompió algo, se dañó, o se perdió producto. Elegís el ítem y la cantidad — Stoki calcula el monto automáticamente y descuenta stock si querés.'
+      },
+      {
+        titulo: 'Cómo registrarlo',
+        texto: 'Andá a Cierre del día → "💰 Registrar movimiento". Elegí el tipo, cargá los datos y listo.'
+      },
+      {
+        titulo: 'Desde el detalle',
+        texto: 'Atajo: cuando estés viendo un producto o material, tocá "⚠️ Registrar pérdida" y se precarga.'
+      }
+    ]
+  },
+  {
     id: 'config',
     icono: '⚙️',
     titulo: 'Configuración',
