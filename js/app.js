@@ -791,10 +791,9 @@ document.addEventListener('click', function(e){
   var stTab = e.target.closest('[data-sttipo]');
   if(stTab){
     e.preventDefault(); e.stopPropagation();
-    if(typeof statsPageFiltroTipo !== 'undefined'){
-      window.statsPageFiltroTipo = stTab.dataset.sttipo;
+    if(typeof window.setStatsPageFiltro === 'function'){
+      window.setStatsPageFiltro(stTab.dataset.sttipo);
     }
-    if(typeof renderStatsPage === 'function') renderStatsPage();
     return;
   }
 
@@ -805,3 +804,38 @@ document.addEventListener('click', function(e){
     return;
   }
 }, true);
+
+/* ═══════════════════════════════════════════
+   AUTO-OPEN para overlays insertados sin .open
+   Previene el bug recurrente de modales invisibles
+   ═══════════════════════════════════════════ */
+const _overlayObserver = new MutationObserver((mutations) => {
+  mutations.forEach(m => {
+    m.addedNodes.forEach(node => {
+      if(node.nodeType !== 1) return;
+
+      /* Caso 1: el propio nodo es un overlay sin .open */
+      if(node.classList && node.classList.contains('overlay') && !node.classList.contains('open')){
+        node.classList.add('open');
+      }
+
+      /* Caso 2: el nodo contiene overlays sin .open */
+      if(node.querySelectorAll){
+        node.querySelectorAll('.overlay').forEach(ov => {
+          if(!ov.classList.contains('open')){
+            ov.classList.add('open');
+          }
+        });
+      }
+    });
+  });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  _overlayObserver.observe(document.body, { childList: true, subtree: true });
+});
+
+/* También si el DOM ya estaba listo */
+if(document.readyState !== 'loading'){
+  _overlayObserver.observe(document.body, { childList: true, subtree: true });
+}

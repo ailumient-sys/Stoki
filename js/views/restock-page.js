@@ -170,7 +170,7 @@ function abrirRestockItem(id){
   const stockTxt = fmtCantidadUnidad(c.stock, p.unidad || 'unidad');
 
   const h = `
-    <div class="overlay" id="m-restock-item">
+    <div class="overlay open" id="m-restock-item">
       <div class="sheet" style="position:relative">
         <div class="sheet-handle"></div>
         <button class="x" id="rst-close">✕</button>

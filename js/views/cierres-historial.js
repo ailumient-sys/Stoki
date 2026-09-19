@@ -58,7 +58,7 @@ function abrirCierresHistorial(){
   }).join('');
 
   const html = `
-    <div class="overlay" id="m-cierres-hist">
+    <div class="overlay open" id="m-cierres-hist">
       <div class="sheet" style="position:relative">
         <div class="sheet-handle"></div>
         <button class="x" id="ch-close">✕</button>

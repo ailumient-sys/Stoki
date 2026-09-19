@@ -541,5 +541,8 @@ function statsPageRentabilidadPorTipo(){
 }
 
 
-/* Exponer para event delegation global */
-window.statsPageFiltroTipo = statsPageFiltroTipo;
+/* Exponer setter para event delegation global */
+window.setStatsPageFiltro = function(tipo){
+  statsPageFiltroTipo = tipo;
+  if(typeof renderStatsPage === 'function') renderStatsPage();
+};
