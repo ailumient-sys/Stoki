@@ -82,7 +82,10 @@ img{
 img.clickable{ pointer-events:auto; }
 
 button, a, .card, .inv-item, .sale-row, .nav-btn,
-.kbox, .thumb, .foto-prev, label{
+.kbox, .thumb, .foto-prev, label,
+.orders-tab, .inv-tab, .rp-add, .exp-modo-btn,
+.btn-main, .btn-ghost, .btn-scan-inline, .cart-item-btn,
+.cart-item-del, .bill-del, .ciexp-check, .rp-prov-row{
   touch-action:manipulation;
 }
 

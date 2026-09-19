@@ -690,3 +690,49 @@ document.addEventListener('click', e => {
 });
 
 
+
+/* ═══════════════════════════════════════════
+   EVENT DELEGATION GLOBAL — Botones críticos
+   Resuelve taps que no responden por re-render
+   ═══════════════════════════════════════════ */
+document.addEventListener('click', function(e){
+  /* Tabs de citas/pedidos */
+  var tab = e.target.closest('.orders-tab[data-ovista]');
+  if(tab){
+    e.preventDefault(); e.stopPropagation();
+    if(typeof _ordersVistaActual !== 'undefined'){
+      window._ordersVistaActual = tab.dataset.ovista;
+    }
+    if(typeof renderOrders === 'function') renderOrders();
+    return;
+  }
+
+  /* Registrar movimiento */
+  if(e.target.closest('#cie-movimiento')){
+    e.preventDefault(); e.stopPropagation();
+    if(typeof abrirMovimiento === 'function') abrirMovimiento();
+    return;
+  }
+
+  /* Guardar cierre del día */
+  if(e.target.closest('#cie-guardar')){
+    e.preventDefault(); e.stopPropagation();
+    if(typeof guardarCierreActual === 'function') guardarCierreActual();
+    return;
+  }
+
+  /* Exportar cierre */
+  if(e.target.closest('#cie-exportar')){
+    e.preventDefault(); e.stopPropagation();
+    if(typeof abrirModalExportarCierre === 'function') abrirModalExportarCierre();
+    return;
+  }
+
+  /* Botón + Stock en restock page */
+  var rpadd = e.target.closest('[data-rpadd]');
+  if(rpadd){
+    e.preventDefault(); e.stopPropagation();
+    if(typeof abrirRestockItem === 'function') abrirRestockItem(rpadd.dataset.rpadd);
+    return;
+  }
+}, true);

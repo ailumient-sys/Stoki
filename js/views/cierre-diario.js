@@ -251,3 +251,13 @@ function guardarCierreDiario(ticketsHoy){
   toast('✅ Día cerrado · ' + fmt(totalFacturado));
   if(navigator.vibrate) navigator.vibrate(20);
 }
+
+/* ═══════════════════════════════════════════
+   Guardar cierre sin argumentos (para event delegation)
+   ═══════════════════════════════════════════ */
+function guardarCierreActual(){
+  const hoy = todayISO();
+  const ticketsHoy = (window.DB.tickets || []).filter(t => t.fecha.slice(0, 10) === hoy);
+
+  guardarCierreDiario(ticketsHoy);
+}
