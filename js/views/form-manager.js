@@ -16,7 +16,7 @@ function _abrirFormItemInterno(tipo, editId){
   _fiFotos = []; _fiFotoP = 0; _fiCatId = null; _fiMTipo = 'pct-unidad';
   if(document.querySelector('#m-form-item')) return;
   const h = `
-    <div class="overlay" id="m-form-item">
+    <div class="overlay open" id="m-form-item">
       <div class="sheet" style="position:relative">
         <div class="sheet-handle"></div>
         <button class="x" id="fi-close">✕</button>
