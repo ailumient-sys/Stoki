@@ -8,22 +8,21 @@ function openDetail(id){
   const p = window.DB.products.find(x => x.id === id);
   if(!p) return;
 
+  const t = tipoDe(p);
   const c = calc(p);
-  const enRojo = c.saldo < 0;
-
   const body = $('#detail-body');
   if(!body) return;
 
-  body.innerHTML = buildDetailHTML(p, c, enRojo);
+  let html = '';
 
-  const btnRestock = $('#d-restock');
-  if(btnRestock){
-    btnRestock.onclick = () => {
-      closeModal('#m-detail');
-      openRestock(id);
-    };
-  }
+  if(t === 'servicio')      html = buildDetailServicio(p, c);
+  else if(t === 'receta')   html = buildDetailReceta(p, c);
+  else if(t === 'material') html = buildDetailMaterial(p, c);
+  else                      html = buildDetailProducto(p, c);
 
+  body.innerHTML = html;
+
+  /* Bind de botones comunes */
   const btnEdit = $('#d-edit');
   if(btnEdit) btnEdit.onclick = () => {
     closeModal('#m-detail');
@@ -33,7 +32,23 @@ function openDetail(id){
   const btnDel = $('#d-del');
   if(btnDel) btnDel.onclick = () => eliminarProducto(id, p.nombre);
 
+  /* Solo productos y materiales tienen Agregar stock */
+  const btnStock = $('#d-stock');
+  if(btnStock){
+    btnStock.onclick = () => {
+      closeModal('#m-detail');
+      if(typeof abrirRestockItem === 'function') abrirRestockItem(id);
+      else toast('⚠️ Restock no disponible');
+    };
+  }
+
   openModal('#m-detail');
+}
+
+/* Renombrar el viejo buildDetailHTML a buildDetailProducto */
+function buildDetailProducto(p, c){
+  const enRojo = c.saldo < 0;
+  return buildDetailHTML(p, c, enRojo);
 }
 
 /* =========================================================
@@ -293,4 +308,278 @@ async function eliminarProducto(id, nombre){
   renderAll();
   closeModal('#m-detail');
   toast('🗑️ Producto eliminado');
+}
+
+/* =========================================================
+   DETALLE — MATERIAL
+   ========================================================= */
+function buildDetailMaterial(p, c){
+  const carrusel = buildCarrusel(p);
+  const unidad = p.unidad || 'unidad';
+  const ui = unidadInfo(unidad);
+  const stockTxt = fmtCantidadUnidad(c.stock, unidad);
+  const colorStock = { ok:'var(--green)', atencion:'var(--amber)', urgente:'var(--red)', agotado:'var(--dim)' }[c.estadoStock];
+
+  const codigoBadge = p.codigoBarras
+    ? `<div class="meta" style="margin-top:4px;font-size:11px;color:var(--dim)">🏷️ ${esc(p.codigoBarras)}</div>`
+    : '';
+
+  /* Recetas donde se usa este material */
+  const recetasQueLoUsan = (window.DB.products || []).filter(x => {
+    if(tipoDe(x) !== 'receta') return false;
+    return (x.componentes || []).some(comp => comp.id === p.id);
+  });
+
+  const usosHTML = recetasQueLoUsan.length
+    ? `
+      <div class="detail-lotes">
+        <div class="detail-lotes-title">🍽️ Usado en recetas</div>
+        ${recetasQueLoUsan.map(r => `
+          <div class="detail-lote">
+            <span>${esc(r.nombre)}</span>
+            <span>${(r.componentes.find(x=>x.id===p.id)||{}).cantidad || 0} ${ui.abreviacion}</span>
+          </div>
+        `).join('')}
+      </div>`
+    : '';
+
+  /* Botón "Vendible suelto" solo si aplica */
+  const vendibleBadge = p.vendibleSuelto
+    ? `<div class="badge-unico" style="background:rgba(34,197,94,.15);color:var(--green)">🛒 Vendible suelto</div>`
+    : '';
+
+  return `
+    ${carrusel}
+
+    <div style="margin-bottom:16px">
+      <h2 style="margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:-.3px">
+        ${esc(p.nombre)}
+      </h2>
+      <div class="meta">
+        🔵 Material · Unidad: ${ui.nombre}
+      </div>
+      ${codigoBadge}
+      ${vendibleBadge}
+    </div>
+
+    <div class="kpis">
+      <div class="kbox">
+        <div class="k">Stock</div>
+        <div class="v" style="color:${colorStock}">${stockTxt}</div>
+      </div>
+      <div class="kbox">
+        <div class="k">Costo actual</div>
+        <div class="v">${fmt(c.costoU)} / ${ui.abreviacion}</div>
+      </div>
+      <div class="kbox">
+        <div class="k">Inversión</div>
+        <div class="v">${fmtDual(c.inversion)}</div>
+      </div>
+      <div class="kbox">
+        <div class="k">Recuperado</div>
+        <div class="v">${fmtDual(c.ingreso)}</div>
+      </div>
+    </div>
+
+    ${p.vendibleSuelto ? `
+    <div class="kpis">
+      <div class="kbox">
+        <div class="k">Precio venta</div>
+        <div class="v" style="color:var(--green)">${fmt(c.precioVenta)} / ${ui.abreviacion}</div>
+      </div>
+    </div>
+    ` : ''}
+
+    ${usosHTML}
+
+    <button class="btn-main" id="d-stock">➕ Agregar stock</button>
+    <button class="btn-ghost" id="d-edit">✏️ Editar material</button>
+    <button class="btn-ghost btn-danger" id="d-del">Eliminar material</button>
+  `;
+}
+
+/* =========================================================
+   DETALLE — RECETA
+   ========================================================= */
+function buildDetailReceta(p, c){
+  const carrusel = buildCarrusel(p);
+
+  const codigoBadge = p.codigoBarras
+    ? `<div class="meta" style="margin-top:4px;font-size:11px;color:var(--dim)">🏷️ ${esc(p.codigoBarras)}</div>`
+    : '';
+
+  /* Faltantes: qué falta para hacer al menos 1 más */
+  let faltantesHTML = '';
+  if(c.stockDisponible === 0 && c.componentes.length){
+    const faltan = c.componentes.filter(comp => !comp.existe || comp.alcanza === 0);
+    if(faltan.length){
+      faltantesHTML = `
+        <div class="restock-alert show" style="background:rgba(245,158,11,.14);color:var(--amber);margin-bottom:14px">
+          ⚠️ Faltan materiales: ${faltan.map(f => esc(f.nombre)).join(', ')}
+        </div>`;
+    }
+  }
+
+  /* Composición */
+  const compHTML = c.componentes.map(comp => {
+    const existe = comp.existe;
+    const alcanza = comp.alcanza || 0;
+    const colorAlcanza = alcanza === 0 ? 'var(--red)' : alcanza <= 3 ? 'var(--amber)' : 'var(--green)';
+    const ui = unidadInfo(comp.unidad);
+
+    return `
+      <div class="detail-lote" style="align-items:flex-start;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between;width:100%">
+          <span style="font-weight:800;color:var(--txt)">
+            ${existe ? '🧩' : '❓'} ${esc(comp.nombre)}
+          </span>
+          <span style="font-weight:800">
+            ${fmtCantidadUnidad(comp.cantidad, comp.unidad)}
+          </span>
+        </div>
+        ${existe ? `
+          <div style="display:flex;justify-content:space-between;width:100%;font-size:10px;color:var(--dim)">
+            <span>Stock: ${fmtCantidadUnidad(comp.stockMat, comp.unidad)}</span>
+            <span style="color:${colorAlcanza}">
+              ${alcanza > 0 ? `Alcanza para ${alcanza}` : '⚠️ Sin stock'}
+            </span>
+          </div>
+        ` : '<div style="font-size:10px;color:var(--red)">Producto no encontrado</div>'}
+      </div>`;
+  }).join('');
+
+  const limitadoPor = c.limitadoPor
+    ? `<div style="font-size:12px;color:var(--amber);font-weight:700;margin-top:8px">
+         ⚠️ Limitado por: ${esc(c.limitadoPor)}
+       </div>`
+    : '';
+
+  return `
+    ${carrusel}
+
+    <div style="margin-bottom:16px">
+      <h2 style="margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:-.3px">
+        ${esc(p.nombre)}
+      </h2>
+      <div class="meta">🟣 Receta</div>
+      ${codigoBadge}
+    </div>
+
+    ${faltantesHTML}
+
+    <div class="kpis">
+      <div class="kbox">
+        <div class="k">Alcanza para</div>
+        <div class="v" style="color:${c.stockDisponible === 0 ? 'var(--red)' : 'var(--green)'}">
+          ${c.stockDisponible} ${c.stockDisponible === 1 ? 'unidad' : 'unidades'}
+        </div>
+      </div>
+      <div class="kbox">
+        <div class="k">Precio venta</div>
+        <div class="v" style="color:var(--green)">${fmt(c.precioVenta)}</div>
+      </div>
+      <div class="kbox">
+        <div class="k">Costo materiales</div>
+        <div class="v">${fmt(c.costoU)}</div>
+      </div>
+      <div class="kbox">
+        <div class="k">Ganancia</div>
+        <div class="v">${fmt(c.gananciaUnidad)} (${c.margenPct.toFixed(0)}%)</div>
+      </div>
+    </div>
+
+    ${limitadoPor}
+
+    <div class="detail-lotes">
+      <div class="detail-lotes-title">🧩 Composición</div>
+      ${compHTML}
+    </div>
+
+    <button class="btn-ghost" id="d-edit">✏️ Editar receta</button>
+    <button class="btn-ghost btn-danger" id="d-del">Eliminar receta</button>
+  `;
+}
+
+/* =========================================================
+   DETALLE — SERVICIO
+   ========================================================= */
+function buildDetailServicio(p, c){
+  const carrusel = buildCarrusel(p);
+
+  const codigoBadge = p.codigoBarras
+    ? `<div class="meta" style="margin-top:4px;font-size:11px;color:var(--dim)">🏷️ ${esc(p.codigoBarras)}</div>`
+    : '';
+
+  const duracionHTML = c.duracion > 0
+    ? `<div class="meta">⏱️ ${c.duracion} min</div>`
+    : '';
+
+  const descHTML = c.descripcion
+    ? `<div style="background:var(--bg3);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--txt);margin-bottom:14px;line-height:1.5">${esc(c.descripcion)}</div>`
+    : '';
+
+  /* Consumibles (se oculta si no hay) */
+  let consumHTML = '';
+  if(c.consumibles.length){
+    consumHTML = `
+      <div class="detail-lotes">
+        <div class="detail-lotes-title">🧩 Consumibles</div>
+        ${c.consumibles.map(cons => `
+          <div class="detail-lote" style="align-items:flex-start;flex-direction:column;gap:4px">
+            <div style="display:flex;justify-content:space-between;width:100%">
+              <span style="font-weight:800;color:var(--txt)">
+                ${cons.existe ? '🧴' : '❓'} ${esc(cons.material ? cons.material.nombre : 'Desconocido')}
+              </span>
+              <span style="font-weight:800">
+                ${fmtCantidadUnidad(cons.cantidad, cons.material ? cons.material.unidad : 'unidad')}
+              </span>
+            </div>
+            ${cons.existe && cons.alcanza > 0 ? `
+              <div style="font-size:10px;color:var(--dim);text-align:right;width:100%">
+                Alcanza para ${cons.alcanza} servicios
+              </div>
+            ` : ''}
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
+  return `
+    ${carrusel}
+
+    <div style="margin-bottom:16px">
+      <h2 style="margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:-.3px">
+        ${esc(p.nombre)}
+      </h2>
+      <div class="meta">🔴 Servicio</div>
+      ${duracionHTML}
+      ${codigoBadge}
+    </div>
+
+    <div class="kpis">
+      <div class="kbox">
+        <div class="k">Precio</div>
+        <div class="v" style="color:var(--green)">${fmt(c.precioVenta)}</div>
+      </div>
+      <div class="kbox">
+        <div class="k">Costo consumibles</div>
+        <div class="v">${fmt(c.costoU)}</div>
+      </div>
+      <div class="kbox">
+        <div class="k">Ganancia neta</div>
+        <div class="v">${fmt(c.gananciaNeta)}</div>
+      </div>
+      <div class="kbox">
+        <div class="k">Vendidos</div>
+        <div class="v">${c.uVend}</div>
+      </div>
+    </div>
+
+    ${descHTML}
+
+    ${consumHTML}
+
+    <button class="btn-ghost" id="d-edit">✏️ Editar servicio</button>
+    <button class="btn-ghost btn-danger" id="d-del">Eliminar servicio</button>
+  `;
 }
