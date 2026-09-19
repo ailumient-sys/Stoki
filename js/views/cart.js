@@ -205,9 +205,18 @@ function agregarAlCarrito(productoId, cantidad = 1){
   if(!p) return;
 
   const c = calc(p);
-  if(c.stock <= 0){
+  const t = tipoDe(p);
+
+  /* Servicios: siempre disponible */
+  if(t !== 'servicio' && c.stock <= 0){
     toast('⚠️ Sin stock');
     return;
+  }
+
+  /* Productos/materiales con unidad fraccionada: pedir cantidad */
+  const unidad = p.unidad || 'unidad';
+  if((t === 'producto' || t === 'material') && unidad !== 'unidad'){
+    return _pvPedirCantidad(p, c, cantidad);
   }
 
   const existente = window.CARRITO.items.find(i => i.productoId === productoId);
@@ -344,10 +353,33 @@ function renderCartList(){
     const p = window.DB.products.find(x => x.id === item.productoId);
     if(!p) return;
 
+    const t = tipoDe(p);
+    const unidad = p.unidad || 'unidad';
+    const esFrac = (t === 'producto' || t === 'material') && unidad !== 'unidad';
+    const esServicio = t === 'servicio';
+
     const subtotal = item.cantidad * item.precioUnitario;
     totalUSD += subtotal;
 
     const thumb = buildThumb(p, 44);
+
+    /* Texto de cantidad según tipo */
+    let cantTxt;
+    if(esFrac){
+      cantTxt = `${fmtCantidadUnidad(item.cantidad, unidad)} × ${fmt(item.precioUnitario)}/${unidadInfo(unidad).abreviacion}`;
+    } else {
+      cantTxt = `${item.cantidad} × ${fmt(item.precioUnitario)}`;
+    }
+
+    /* Botones: si es fraccionado, no mostrar − y + (no aplican a gramos) */
+    const cantDisplay = esFrac
+      ? `<span class="cart-item-cant">${fmtCantidadUnidad(item.cantidad, unidad)}</span>`
+      : `<span class="cart-item-cant">${item.cantidad}</span>`;
+
+    const btnsMod = esFrac
+      ? ''
+      : `<button class="cart-item-btn" data-mod="${idx}" data-delta="-1" type="button">−</button>
+         <button class="cart-item-btn" data-mod="${idx}" data-delta="1" type="button">+</button>`;
 
     html += `
       <div class="cart-item">
@@ -355,14 +387,12 @@ function renderCartList(){
         <div class="cart-item-info">
           <div class="cart-item-name">${esc(p.nombre)}</div>
           <div class="cart-item-prices">
-            <span>${item.cantidad} × ${fmt(item.precioUnitario)}</span>
+            <span>${cantTxt}</span>
             <span class="cart-item-subtotal">${fmt(subtotal)}</span>
           </div>
         </div>
         <div class="cart-item-actions">
-          <button class="cart-item-btn" data-mod="${idx}" data-delta="-1" type="button">−</button>
-          <span class="cart-item-cant">${item.cantidad}</span>
-          <button class="cart-item-btn" data-mod="${idx}" data-delta="1" type="button">+</button>
+          ${btnsMod}
           <button class="cart-item-del" data-del="${idx}" type="button">🗑️</button>
         </div>
       </div>`;
@@ -525,3 +555,96 @@ function initCart(){
   updateCartFab();
 }
 
+
+/* ═══════════════════════════════════════════
+   PEDIR CANTIDAD FRACCIONADA (kg, g, m, etc)
+   ═══════════════════════════════════════════ */
+function _pvPedirCantidad(p, c, cantInicial){
+  if(document.querySelector('#m-cant-frac')) return;
+
+  const u = unidadInfo(p.unidad || 'unidad');
+  const stockTxt = c.stock === Infinity ? '∞' : fmtCantidadUnidad(c.stock, p.unidad);
+  const precioTxt = c.tipo === 'producto' || c.tipo === 'material'
+    ? `${fmt(c.precioVenta)}/${u.abreviacion}`
+    : fmt(c.precioVenta);
+
+  const h = `
+    <div class="overlay centered open" id="m-cant-frac" style="z-index:220">
+      <div class="sheet" style="position:relative;max-width:380px">
+        <button class="x" id="cf-close">✕</button>
+        <h2>${esc(p.nombre)}</h2>
+        <div class="sub">${precioTxt} · ${stockTxt} disponibles</div>
+
+        <label>¿Cuánto lleva?</label>
+        <div class="cant-frac-row">
+          <input type="number" id="cf-input" inputmode="decimal" step="0.01" min="0" value="${cantInicial || 1}">
+          <span class="cant-frac-unit">${u.abreviacion}</span>
+        </div>
+
+        <div class="cant-frac-total" id="cf-total"></div>
+
+        <button class="btn-main" id="cf-ok">✅ Agregar al carrito</button>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', h);
+
+  const cerrar = () => document.querySelector('#m-cant-frac')?.remove();
+  const inp = document.querySelector('#cf-input');
+  const total = document.querySelector('#cf-total');
+
+  const actualizar = () => {
+    const num = +inp.value || 0;
+    const sub = num * c.precioVenta;
+    total.innerHTML = `<span>Subtotal</span><b>${fmt(sub)}</b>`;
+  };
+
+  inp.oninput = actualizar;
+  actualizar();
+
+  document.querySelector('#cf-close').onclick = cerrar;
+  document.querySelector('#m-cant-frac').onclick = e => {
+    if(e.target.id === 'm-cant-frac') cerrar();
+  };
+
+  document.querySelector('#cf-ok').onclick = () => {
+    const num = +inp.value || 0;
+    if(num <= 0) return toast('⚠️ Cantidad inválida');
+    if(c.stock !== Infinity && num > c.stock){
+      return toast(`⚠️ Solo hay ${fmtCantidadUnidad(c.stock, p.unidad)}`);
+    }
+
+    cerrar();
+    _pvAgregarConCantidad(p, num);
+  };
+
+  setTimeout(() => { inp.focus(); inp.select(); }, 200);
+}
+
+function _pvAgregarConCantidad(p, cant){
+  const c = calc(p);
+  const existente = window.CARRITO.items.find(i => i.productoId === p.id);
+
+  if(existente){
+    const nuevaCant = existente.cantidad + cant;
+    if(c.stock !== Infinity && nuevaCant > c.stock){
+      return toast(`⚠️ Solo hay ${fmtCantidadUnidad(c.stock, p.unidad)}`);
+    }
+    existente.cantidad = nuevaCant;
+  } else {
+    window.CARRITO.items.push({
+      productoId: p.id,
+      cantidad: cant,
+      precioUnitario: c.precioVenta,
+      unidad: p.unidad || 'unidad'
+    });
+  }
+
+  saveCarrito();
+  if(typeof updateCartFab === 'function') updateCartFab();
+  if(typeof actualizarBadgeProducto === 'function') actualizarBadgeProducto(p.id);
+  if(navigator.vibrate) navigator.vibrate(15);
+
+  const u = unidadInfo(p.unidad || 'unidad');
+  toast(`✅ ${fmtCantidadUnidad(cant, p.unidad)} de ${p.nombre}`);
+}
