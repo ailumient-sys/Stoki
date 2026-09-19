@@ -125,8 +125,12 @@
 /* ---------- Grid ---------- */
 .pv-grid {
   display: grid;
-  grid-template-columns: repeat(var(--cols, 4), 1fr);
+  grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   gap: 6px;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  padding-right: 2px;
 }
 
 .pv-item {
@@ -138,6 +142,9 @@
   transition: transform .1s, background .15s;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .pv-item:active {

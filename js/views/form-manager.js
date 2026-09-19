@@ -51,6 +51,159 @@ function _abrirFormItemInterno(tipo, editId){
   renderFiFotos();
   _fiRenderTipo();
   bindFormManager();
+
+  /* Si estamos editando, precargar datos */
+  if(_fiEditId){
+    _fiPrecargarDatos();
+  }
+}
+
+/* ═══════════════════════════════════════════
+   PRECARGAR DATOS AL EDITAR
+   ═══════════════════════════════════════════ */
+function _fiPrecargarDatos(){
+  const p = window.DB.products.find(x => x.id === _fiEditId);
+  if(!p) return;
+
+  /* Base: nombre, código, categoría, fotos */
+  const inpNombre = document.querySelector('#fi-nombre');
+  if(inpNombre) inpNombre.value = p.nombre || '';
+
+  const inpCodigo = document.querySelector('#fi-codigo');
+  if(inpCodigo) inpCodigo.value = p.codigoBarras || '';
+
+  _fiCatId = p.categoriaId || null;
+  _fiActCat();
+
+  _fiFotos = [...(window.FOTOS[p.id] || [])];
+  _fiFotoP = typeof p.fotoPrincipal === 'number' ? p.fotoPrincipal : 0;
+  if(_fiFotoP >= _fiFotos.length) _fiFotoP = 0;
+  renderFiFotos();
+
+  /* Específico por tipo */
+  const t = tipoDe(p);
+
+  if(t === 'producto')      _fiPrecargarProducto(p);
+  else if(t === 'material') _fiPrecargarMaterial(p);
+  else if(t === 'receta')   _fiPrecargarReceta(p);
+  else if(t === 'servicio') _fiPrecargarServicio(p);
+}
+
+function _fiPrecargarProducto(p){
+  const u = document.querySelector('#fp-unidad');
+  if(u) u.value = p.unidad || 'unidad';
+
+  const c = calc(p);
+
+  const st = document.querySelector('#fp-stock');
+  if(st) st.value = c.stock || '';
+
+  const ct = document.querySelector('#fp-costo');
+  if(ct) ct.value = c.costoU > 0 ? (c.costoU * (c.stock || 1)).toFixed(2) : '';
+
+  const cu = document.querySelector('#fp-costo-u');
+  if(cu) cu.value = c.costoU > 0 ? c.costoU.toFixed(2) : '';
+
+  /* Tipo de margen */
+  const mtipoReal = p.tipoMargen || 'pct-unidad';
+  const tipoNormalizado = mtipoReal === 'porcentaje' ? 'pct-unidad'
+                        : mtipoReal === 'fijo' ? 'fijo-unidad'
+                        : mtipoReal === 'fijo-lote' ? 'fijo-lote'
+                        : mtipoReal === 'precio' ? 'precio-fijo'
+                        : mtipoReal === 'precio-lote' ? 'precio-fijo'
+                        : mtipoReal;
+
+  _fiMTipo = tipoNormalizado;
+  const seg = document.querySelector('#fp-mtipo');
+  if(seg){
+    seg.querySelectorAll('button').forEach(b => b.classList.toggle('active', b.dataset.mtipo === tipoNormalizado));
+  }
+
+  const mv = document.querySelector('#fp-mvalor');
+  if(mv) mv.value = p.valorMargen || 0;
+
+  const si = document.querySelector('#fp-stock-inf');
+  if(si) si.checked = !!p.stockInfinito;
+
+  const tm = document.querySelector('#fp-tamb-mat');
+  if(tm) tm.checked = !!p.tambienMaterial;
+
+  /* Re-ejecutar preview */
+  if(typeof _fpPreview === 'function') _fpPreview();
+}
+
+function _fiPrecargarMaterial(p){
+  const u = document.querySelector('#fm-unidad');
+  if(u) u.value = p.unidad || 'g';
+
+  const c = calc(p);
+
+  const st = document.querySelector('#fm-stock');
+  if(st) st.value = c.stock || '';
+
+  const ct = document.querySelector('#fm-costo');
+  if(ct) ct.value = c.costoU > 0 ? (c.costoU * (c.stock || 1)).toFixed(2) : '';
+
+  const cu = document.querySelector('#fm-costo-u');
+  if(cu) cu.value = c.costoU > 0 ? c.costoU.toFixed(4) : '';
+
+  const vnd = document.querySelector('#fm-vendible');
+  if(vnd){
+    vnd.checked = !!p.vendibleSuelto;
+    const zona = document.querySelector('#fm-zona-vend');
+    if(zona) zona.style.display = vnd.checked ? 'block' : 'none';
+  }
+
+  const mv = document.querySelector('#fm-mvalor');
+  if(mv) mv.value = p.valorMargen || 0;
+
+  if(typeof _fmPreview === 'function') _fmPreview();
+}
+
+function _fiPrecargarReceta(p){
+  const pr = document.querySelector('#fr-precio');
+  if(pr) pr.value = p.valorMargen || 0;
+
+  _frComp = (p.componentes || []).map(comp => {
+    const item = window.DB.products.find(x => x.id === comp.id);
+    const c = item ? calc(item) : null;
+    return {
+      id: comp.id,
+      nombre: item ? item.nombre : '(eliminado)',
+      cantidad: comp.cantidad,
+      unidad: item ? (item.unidad || 'unidad') : 'unidad',
+      costoU: c ? (c.costoU || 0) : 0
+    };
+  });
+
+  if(typeof _frRenderComp === 'function') _frRenderComp();
+  if(typeof _frPreview === 'function') _frPreview();
+}
+
+function _fiPrecargarServicio(p){
+  const pr = document.querySelector('#fs-precio');
+  if(pr) pr.value = p.valorMargen || 0;
+
+  const du = document.querySelector('#fs-dur');
+  if(du) du.value = p.duracion || '';
+
+  const de = document.querySelector('#fs-desc');
+  if(de) de.value = p.descripcion || '';
+
+  _fsCons = (p.consumibles || []).map(cons => {
+    const item = window.DB.products.find(x => x.id === cons.materialId);
+    const c = item ? calc(item) : null;
+    return {
+      materialId: cons.materialId,
+      nombre: item ? item.nombre : '(eliminado)',
+      cantidad: cons.cantidad,
+      unidad: item ? (item.unidad || 'unidad') : 'unidad',
+      costoU: c ? (c.costoU || 0) : 0
+    };
+  });
+
+  if(typeof _fsRenderCons === 'function') _fsRenderCons();
+  if(typeof _fsPreview === 'function') _fsPreview();
 }
 
 function cerrarFormItem(){
