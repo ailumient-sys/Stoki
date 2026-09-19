@@ -7,6 +7,7 @@
    ========================================================= */
 
 let invModoOrden = 'recientes';
+let invFiltroTipo = 'todo';
 let invBusqueda  = '';
 let invCatsExpandidas = {};  /* { catId: true/false } */
 
@@ -186,6 +187,14 @@ function buildInventarioToolbar(){
         </div>
       </div>
 
+      <div class="inv-tabs" id="inv-tabs">
+        <button class="inv-tab ${invFiltroTipo==='todo'?'active':''}" data-tipo="todo" type="button">Todo</button>
+        <button class="inv-tab ${invFiltroTipo==='producto'?'active':''}" data-tipo="producto" type="button">🟢 Producto</button>
+        <button class="inv-tab ${invFiltroTipo==='material'?'active':''}" data-tipo="material" type="button">🔵 Material</button>
+        <button class="inv-tab ${invFiltroTipo==='receta'?'active':''}" data-tipo="receta" type="button">🟣 Receta</button>
+        <button class="inv-tab ${invFiltroTipo==='servicio'?'active':''}" data-tipo="servicio" type="button">🔴 Servicio</button>
+      </div>
+
       <div class="inv-search">
         <input type="text"
                id="inv-search-input"
@@ -262,6 +271,11 @@ function abrirFiltroInventario(){
    ========================================================= */
 function getInventarioList(){
   let lista = [...window.DB.products];
+
+  /* Filtrar por tipo */
+  if(invFiltroTipo !== 'todo'){
+    lista = lista.filter(p => tipoDe(p) === invFiltroTipo);
+  }
 
   if(invBusqueda){
     const q = normalize(invBusqueda);
