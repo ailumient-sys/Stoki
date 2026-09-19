@@ -1577,11 +1577,7 @@ function bindCitasEvents(){
     };
   });
 
-  /* Nueva cita */
-  const btn = document.querySelector('#cita-nueva');
-  if(btn){
-    btn.onclick = () => abrirNuevaCita();
-  }
+  /* Nueva cita: manejado por event delegation global en app.js */
 
   /* Cards de cita */
   document.querySelectorAll('.order-card.cita').forEach(card => {

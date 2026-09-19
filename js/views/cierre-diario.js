@@ -247,6 +247,7 @@ function guardarCierreDiario(ticketsHoy){
 
   let totalFacturado = 0, gananciaTotal = 0;
   let efectivo = 0, debito = 0, pagoMovil = 0;
+  let porTipo = { producto: 0, material: 0, receta: 0, servicio: 0 };
 
   ticketsHoy.forEach(t => {
     totalFacturado += t.total || 0;
@@ -254,6 +255,14 @@ function guardarCierreDiario(ticketsHoy){
     if(t.efectivo) efectivo += t.total || 0;
     else if(t.debito) debito += t.total || 0;
     else if(t.pagoMovil) pagoMovil += t.total || 0;
+
+    (t.items || []).forEach(it => {
+      const prod = window.DB.products.find(x => x.id === it.productoId);
+      const tipo = prod ? tipoDe(prod) : 'producto';
+      if(porTipo[tipo] !== undefined){
+        porTipo[tipo] += (it.cantidad || 0) * (it.precioUnitario || 0);
+      }
+    });
   });
 
   /* Snapshot del stock al momento de cerrar */
@@ -287,14 +296,14 @@ function guardarCierreDiario(ticketsHoy){
    ═══════════════════════════════════════════ */
 function guardarCierreActual(){
   try{
-    alert('DEBUG 1: guardarCierreActual se llamó');
     const hoy = todayISO();
     const ticketsHoy = (window.DB.tickets || []).filter(t => t.fecha.slice(0, 10) === hoy);
     guardarCierreDiario(ticketsHoy);
     const el = document.querySelector('#m-cierre');
     if(el) el.remove();
-    alert('DEBUG 2: cierre guardado OK');
+    toast('✅ Día cerrado');
   }catch(err){
-    alert('DEBUG ERROR: ' + (err.message || String(err)));
+    console.error('Error al cerrar:', err);
+    toast('⚠️ ' + (err.message || 'Error al cerrar'));
   }
 }

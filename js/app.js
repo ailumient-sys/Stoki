@@ -702,7 +702,7 @@ document.addEventListener('click', function(e){
     if(typeof abrirNuevaCita === 'function'){
       abrirNuevaCita();
     } else {
-      alert('DEBUG: abrirNuevaCita NO EXISTE');
+      console.warn('[Cita] abrirNuevaCita no definida');
     }
     return;
   }
