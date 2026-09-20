@@ -16,3 +16,8 @@
 #ocrListo{background:#1f2937;color:#e5e7eb}
 
 .cr-thumb{width:38px;height:38px;border-radius:8px;background:var(--bg4);background-size:cover;background-position:center;flex:0 0 auto}
+
+#ocrVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000;z-index:1}
+#ocrModal .ocrFrame{z-index:2}
+#ocrModal .ocrInfo{z-index:2}
+#ocrModal .ocrAcciones{z-index:3}

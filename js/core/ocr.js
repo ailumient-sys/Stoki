@@ -9,10 +9,10 @@ window.Ocr = (() => {
   // ───────── Plugin nativo (defensivo: prueba varios nombres) ─────────
   function getPlugin() {
     if (typeof Capacitor === 'undefined' || !Capacitor.Plugins) return null;
-    return Capacitor.Plugins.Ocr
+    return Capacitor.Plugins.CapacitorOcr
+        || Capacitor.Plugins.Ocr
         || Capacitor.Plugins.OCR
         || Capacitor.Plugins.ImageToText
-        || Capacitor.Plugins.ImageToTextPlugin
         || Capacitor.Plugins.TextRecognition
         || null;
   }
@@ -63,8 +63,10 @@ window.Ocr = (() => {
   }
 
   // ───────── Orquestador: File → { ok, texto, fotoDataUrl, error? } ─────────
-  async function reconocerProducto(file) {
-    const fotoDataUrl = await prepararFoto(file);
+  async function reconocerProducto(fuente) {
+    const fotoDataUrl = (typeof fuente === 'string')
+      ? await comprimirDataUrl(fuente)
+      : await prepararFoto(fuente);
     const base64      = soloBase64(fotoDataUrl);
 
     const plugin = getPlugin();
@@ -81,9 +83,22 @@ window.Ocr = (() => {
     }
   }
 
+  function comprimirDataUrl(dataUrl){
+    return new Promise((res) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = canvasSuavizado(img);
+        res(canvas.toDataURL('image/jpeg', CALIDAD));
+      };
+      img.onerror = () => res(dataUrl);
+      img.src = dataUrl;
+    });
+  }
+
   return {
     reconocerProducto,
     prepararFoto,
+    comprimirDataUrl,
     cargarImagen,
     getPlugin,
     _canvasSuavizado: canvasSuavizado,   // expuesto para debug

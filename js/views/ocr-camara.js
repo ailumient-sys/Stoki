@@ -1,19 +1,54 @@
 // js/views/ocr-camara.js — Stoki v15
-// Modal cámara + OCR + loop de captura para Carga Rápida.
+// Cámara en vivo + OCR continuo para Carga Rápida.
 
 window.OcrCamara = (() => {
+  let stream = null;
   let activo = false;
-  let onFila = null;   // callback(fotoDataUrl, texto)
+  let onFila = null;
+  let capturando = false;
 
-  function abrir(cb) {
+  function info(txt){
+    const el = document.getElementById('ocrInfo');
+    if(el) el.innerHTML = txt;
+  }
+
+  async function iniciarCamara(){
+    const video = document.getElementById('ocrVideo');
+    if(!video) return;
+
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false
+      });
+      video.srcObject = stream;
+      await video.play().catch(() => {});
+      info('Apuntá al nombre del producto');
+    }catch(e){
+      info('⚠️ Sin cámara: ' + (e.message || e.name));
+    }
+  }
+
+  function detenerCamara(){
+    if(stream){
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+    const video = document.getElementById('ocrVideo');
+    if(video) video.srcObject = null;
+  }
+
+  async function abrir(cb){
     onFila = cb;
     activo = true;
     document.getElementById('ocrFab')?.classList.remove('activo');
     document.getElementById('ocrModal').classList.add('open');
+    await iniciarCamara();
   }
 
-  function cerrar() {
+  function cerrar(){
     activo = false;
+    detenerCamara();
     document.getElementById('ocrModal').classList.remove('open');
     if(document.querySelector('#m-carga-rapida')){
       document.getElementById('ocrFab')?.classList.add('activo');
@@ -21,52 +56,50 @@ window.OcrCamara = (() => {
     onFila = null;
   }
 
-  function info(txt) {
-    const el = document.getElementById('ocrInfo');
-    if (el) el.innerHTML = txt;
-  }
-
-  async function capturar() {
-    document.getElementById('ocrFile').click();
-  }
-
-  async function onFile(e) {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = '';
-    if (!file) return;
-
-    info('Procesando...');
-    await new Promise(r => setTimeout(r, 250));
-    try {
-      const r = await window.Ocr.reconocerProducto(file);
-      const nombre = (r.texto || '').split('\n').map(s => s.trim()).filter(Boolean)[0] || '';
-      if (onFila) onFila(r.fotoDataUrl, nombre);
-
-      if (r.ok && nombre) {
-        info('✅ ' + nombre);
-      } else if (r.ok) {
-        info('Sin texto — escribí el nombre');
-      } else {
-        const P = (window.Capacitor && Capacitor.Plugins) || {};
-        const keys = Object.keys(P).join(', ') || '(ninguno)';
-        const hasC = !!window.Capacitor;
-        info('⚠️ ' + r.error + '<br><span style="font-size:11px;color:#9ca3af">Capacitor: ' + hasC + ' · Plugins: ' + keys + '</span>');
-      }
-    } catch (err) {
-      info('Error: ' + (err && err.message ? err.message : err));
+  async function capturar(){
+    if(capturando) return;
+    const video = document.getElementById('ocrVideo');
+    if(!video || !video.videoWidth){
+      info('⚠️ Cámara no lista');
+      return;
     }
 
-    if (activo) setTimeout(capturar, 1800);
+    capturando = true;
+    info('Procesando...');
+
+    try{
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(video, 0, 0, w, h);
+
+      const dataUrl = c.toDataURL('image/jpeg', 0.85);
+      const r = await window.Ocr.reconocerProducto(dataUrl);
+      const nombre = (r.texto || '').split('\n').map(s => s.trim()).filter(Boolean)[0] || '';
+
+      if(onFila) onFila(r.fotoDataUrl, nombre);
+
+      if(r.ok && nombre) info('✅ ' + nombre);
+      else if(r.ok) info('Sin texto — escribí el nombre');
+      else {
+        const P = (window.Capacitor && Capacitor.Plugins) || {};
+        info('⚠️ ' + r.error + '<br><span style="font-size:11px;color:#9ca3af">Plugins: ' + Object.keys(P).join(', ') + '</span>');
+      }
+    }catch(err){
+      info('Error: ' + (err && err.message ? err.message : err));
+    }finally{
+      capturando = false;
+    }
   }
 
-  function init() {
+  function init(){
     document.getElementById('ocrCerrar')?.addEventListener('click', cerrar);
     document.getElementById('ocrCapturar')?.addEventListener('click', capturar);
     document.getElementById('ocrListo')?.addEventListener('click', cerrar);
-    document.getElementById('ocrFile')?.addEventListener('change', onFile);
   }
 
-  if (document.readyState === 'loading') {
+  if(document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
