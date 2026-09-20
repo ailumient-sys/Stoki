@@ -1,3 +1,12 @@
+## 2026-09-20 — OCR de nombres con cámara
+
+- Módulo `js/core/ocr.js` con suavizado + resize + ML Kit
+- Modal de cámara con FAB 📷 en Carga Rápida
+- Loop de captura: foto → OCR → fila → reabre cámara
+- Thumbnail de foto en cada fila
+- Foto se guarda en IndexedDB al crear los productos
+- Plugin `@capacitor-community/image-to-text@^6.0.1`
+
 ## 2026-09-19 — Verificación plugin OCR
 
 - Agregado `@capacitor-community/image-to-text@^6.0.1` en dependencies

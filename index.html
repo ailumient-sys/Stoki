@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="css/shopping-lists.css">
   <link rel="stylesheet" href="css/venta-rapida.css">
   <link rel="stylesheet" href="css/global-search.css">
+  <link rel="stylesheet" href="css/ocr-camara.css">
 
   <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" defer></script>
@@ -514,6 +515,7 @@
 <script src="js/core/scanner.js"></script>
 <script src="js/core/exporter.js"></script>
 <script src="js/core/licencia.js"></script>
+  <script src="js/core/ocr.js"></script>
 
 <script src="js/calc.js"></script>
 
@@ -560,7 +562,24 @@
 <script src="js/views/movimientos.js"></script>
 <script src="js/views/cierres-historial.js"></script>
 <script src="js/views/licencia-ui.js"></script>
+  <script src="js/views/ocr-camara.js"></script>
 
 <script src="js/app.js"></script>
+  <button id="ocrFab" aria-label="Agregar con foto">📷</button>
+  <div id="ocrModal">
+    <div class="ocrHead">
+      <span>Foto del producto</span>
+      <button id="ocrCerrar">Cerrar</button>
+    </div>
+    <div class="ocrBody">
+      <div class="ocrFrame"></div>
+      <div class="ocrInfo" id="ocrInfo">Toca <b>Capturar</b> para tomar la foto</div>
+      <div class="ocrAcciones">
+        <button id="ocrCapturar">📷 Capturar</button>
+        <button id="ocrListo">Listo</button>
+      </div>
+      <input type="file" id="ocrFile" accept="image/*" capture="environment" hidden>
+    </div>
+  </div>
 </body>
 </html>

@@ -1,0 +1,18 @@
+#ocrFab{position:fixed;bottom:80px;right:18px;width:60px;height:60px;border-radius:50%;background:#22c55e;color:#0f1115;font-size:28px;border:0;box-shadow:0 6px 18px rgba(34,197,94,.4);z-index:9000;display:none;align-items:center;justify-content:center}
+#ocrFab.activo{display:flex}
+#ocrModal{position:fixed;inset:0;background:#000;z-index:9500;display:none;flex-direction:column}
+#ocrModal.open{display:flex}
+#ocrModal .ocrHead{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;background:#0f1115;color:#e5e7eb;font-weight:600}
+#ocrModal .ocrHead button{background:transparent;color:#22c55e;border:0;font-size:15px;font-weight:600}
+#ocrModal .ocrBody{flex:1;display:flex;align-items:center;justify-content:center;position:relative}
+#ocrModal .ocrFrame{width:78%;aspect-ratio:1;border:3px dashed #22c55e;border-radius:16px;position:relative}
+#ocrModal .ocrFrame::after{content:"Encuadra el producto";position:absolute;bottom:-32px;left:0;right:0;text-align:center;color:#9ca3af;font-size:13px}
+#ocrModal .ocrInfo{position:absolute;bottom:80px;left:0;right:0;padding:16px;background:rgba(15,17,21,.9);color:#e5e7eb;font-size:14px;text-align:center}
+#ocrModal .ocrInfo b{color:#22c55e}
+
+#ocrModal .ocrAcciones{position:absolute;bottom:16px;left:0;right:0;display:flex;gap:10px;justify-content:center;padding:0 16px}
+#ocrModal .ocrAcciones button{padding:12px 22px;border-radius:10px;border:0;font-weight:600;font-size:15px}
+#ocrCapturar{background:#22c55e;color:#0f1115}
+#ocrListo{background:#1f2937;color:#e5e7eb}
+
+.cr-thumb{width:38px;height:38px;border-radius:8px;background:var(--bg4);background-size:cover;background-position:center;flex:0 0 auto}

@@ -47,8 +47,41 @@ function abrirCargaRapida(catId){
 
   document.body.insertAdjacentHTML('beforeend', h);
 
+  document.getElementById('ocrFab')?.classList.add('activo');
+
+  const fab = document.getElementById('ocrFab');
+  if(fab){
+    fab.onclick = () => {
+      if(typeof OcrCamara === 'undefined') return toast('⚠️ OCR no disponible');
+      OcrCamara.abrir((fotoDataUrl, nombre) => {
+        _crLineas.push({
+          id: 'crl_' + Math.random().toString(36).slice(2, 8),
+          nombre: nombre || '',
+          costoTotal: '',
+          unidades: '1',
+          precio: '',
+          codigo: '',
+          _fotoDataUrl: fotoDataUrl
+        });
+        document.querySelector('#cr-zona-filas').style.display = 'block';
+        document.querySelector('#cr-guardar').style.display = 'block';
+        renderCrFilas();
+        if(!nombre){
+          setTimeout(() => {
+            const inputs = document.querySelectorAll('#cr-zona-filas .cr-nombre');
+            const ultimo = inputs[inputs.length - 1];
+            if(ultimo) ultimo.focus();
+          }, 120);
+        }
+      });
+    };
+  }
+
   /* Bind: cerrar */
-  const cerrar = () => document.querySelector('#m-carga-rapida')?.remove();
+  const cerrar = () => {
+    document.querySelector('#m-carga-rapida')?.remove();
+    document.getElementById('ocrFab')?.classList.remove('activo');
+  };
   document.querySelector('#cr-close').onclick = cerrar;
   document.querySelector('#m-carga-rapida').onclick = e => {
     if(e.target.id === 'm-carga-rapida') cerrar();
@@ -134,7 +167,8 @@ function generarFilas(){
       costoTotal: '',
       unidades: '1',
       precio: '',
-      codigo: ''
+      codigo: '',
+      _fotoDataUrl: null
     });
   });
 
@@ -170,7 +204,7 @@ function renderCrFilas(){
   const filas = _crLineas.map((l, idx) => `
     <div class="cr-fila" data-id="${l.id}">
       <div class="cr-fila-head">
-        <span class="cr-fila-num">${idx + 1}</span>
+        ${l._fotoDataUrl ? `<div class="cr-thumb" style="background-image:url('${l._fotoDataUrl}')"></div>` : `<span class="cr-fila-num">${idx + 1}</span>`}
         <input class="cr-input cr-nombre" data-idx="${idx}" data-field="nombre"
                value="${esc(l.nombre)}" placeholder="Nombre" autocomplete="off">
         <button class="cr-del" data-del="${idx}" type="button" title="Eliminar">🗑️</button>
@@ -244,7 +278,8 @@ function bindCrFilas(){
         costoTotal: '',
         unidades: '1',
         precio: '',
-        codigo: ''
+        codigo: '',
+        _fotoDataUrl: null
       });
       renderCrFilas();
       /* Foco en el nuevo */
@@ -328,7 +363,7 @@ async function crearProductosDesdeLineas(lineas){
       codigoBarras: codigo || null,
       categoriaId: _crCatId || null,
       fotoPrincipal: 0,
-      cantidadFotos: 0,
+      cantidadFotos: linea._fotoDataUrl ? 1 : 0,
       tipo: _crTipo,
       creado: Date.now(),
       favorito: false,
@@ -365,6 +400,13 @@ async function crearProductosDesdeLineas(lineas){
         costoUnitario,
         costoDesconocido: costoTotal === 0
       }] : [];
+    }
+
+    if(linea._fotoDataUrl){
+      try{
+        await guardarFotosProducto(nuevoId, [linea._fotoDataUrl]);
+        window.FOTOS[nuevoId] = [linea._fotoDataUrl];
+      }catch(e){ console.warn('[CR] foto OCR no guardada:', e); }
     }
 
     window.DB.products.push(base);
