@@ -110,6 +110,7 @@ function licGuardarEstado(estado){
     localStorage.setItem(LIC_STORAGE_KEY_1, json);
     localStorage.setItem(LIC_STORAGE_KEY_2, btoa(json));
   }catch(e){}
+  licFileGuardar(estado);
 }
 
 function licLeerEstado(){
@@ -127,6 +128,45 @@ function licLeerEstado(){
     }
   }catch(e){}
 
+  return null;
+}
+
+async function licFileGuardar(estado){
+  try{
+    const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+    if(!FS) return;
+    await FS.writeFile({
+      path: 'Stoki/licencia.json',
+      data: JSON.stringify(estado),
+      directory: 'DOCUMENTS',
+      recursive: true,
+      encoding: 'utf8'
+    });
+  }catch(e){ console.warn('[Lic] backup externo falló:', e && e.message); }
+}
+
+async function licFileLeer(){
+  try{
+    const FS = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Filesystem;
+    if(!FS) return null;
+    const r = await FS.readFile({
+      path: 'Stoki/licencia.json',
+      directory: 'DOCUMENTS',
+      encoding: 'utf8'
+    });
+    return JSON.parse(r.data);
+  }catch(e){ return null; }
+}
+
+async function licLeerEstadoAsync(){
+  const local = licLeerEstado();
+  if(local) return local;
+  const file = await licFileLeer();
+  if(file){
+    try{ localStorage.setItem(LIC_STORAGE_KEY_1, JSON.stringify(file)); }catch(e){}
+    console.log('[Lic] restaurado desde Documents/Stoki/');
+    return file;
+  }
   return null;
 }
 
@@ -169,7 +209,7 @@ async function verificarLicencia(){
 
   licVerificarReloj();
 
-  const estado = licLeerEstado() || {};
+  const estado = await licLeerEstadoAsync() || {};
 
   if(estado.codigo){
     const r = await validarLicencia(estado.codigo);
@@ -222,7 +262,7 @@ async function activarLicencia(codigo){
   const r = await validarLicencia(codigo);
   if(!r.ok) return r;
 
-  const estado = licLeerEstado() || {};
+  const estado = await licLeerEstadoAsync() || {};
   estado.codigo = codigo;
   licGuardarEstado(estado);
 
