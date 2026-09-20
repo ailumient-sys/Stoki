@@ -3,7 +3,8 @@
    v26: Directory como STRING (Capacitor Filesystem v6)
    ========================================================= */
 
-const DIR_CACHE = 'CACHE';
+const DIR_BASE = 'DOCUMENTS';
+const CARPETA_BASE = 'Stoki';
 
 function tieneCapacitor(){
   return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -20,6 +21,12 @@ function construirNombre(nombreArchivo, tipo){
     return `Stoki-${nombreArchivo}`;
   }
   return `Stoki-${tipo}-${nombreArchivo}`;
+}
+
+function rutaStoki(nombreArchivo, tipo){
+  const sub = tipo || 'General';
+  const limpioSub = String(sub).replace(/[^a-zA-Z0-9_-]/g, '');
+  return `${CARPETA_BASE}/${limpioSub}/${nombreArchivo}`;
 }
 
 async function guardarArchivo(dataURL, nombreArchivo, tipo){
@@ -39,9 +46,9 @@ async function guardarArchivo(dataURL, nombreArchivo, tipo){
       console.log('[Exporter] writeFile →', nombreFinal, '| bytes:', base64.length);
 
       const r = await Filesystem.writeFile({
-        path: nombreFinal,
+        path: rutaStoki(nombreFinal, tipo),
         data: base64,
-        directory: DIR_CACHE,
+        directory: DIR_BASE,
         recursive: true
       });
 
@@ -94,9 +101,9 @@ async function compartirArchivo(dataURL, nombreArchivo, tipo, titulo){
     if(Filesystem && Share){
       try{
         const r = await Filesystem.writeFile({
-          path: nombreFinal,
+          path: rutaStoki(nombreFinal, tipo),
           data: base64,
-          directory: DIR_CACHE,
+          directory: DIR_BASE,
           recursive: true
         });
 

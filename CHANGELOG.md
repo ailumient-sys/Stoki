@@ -1,3 +1,9 @@
+## 2026-09-20 — Fixes: cita + export a Documents/Stoki + licencia externa
+
+- Fix "selector no disponible" al crear cita (abrirSelectorClienteCita)
+- Exports ahora van a Documents/Stoki/<tipo>/
+- Licencia: backup en Documents/Stoki/licencia.json (sobrevive reinstalar)
+
 ## 2026-09-20 — Swap OCR: Capawesome ML Kit
 
 - image-to-text v6 pedía Firebase → descartado

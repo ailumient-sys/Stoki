@@ -1861,3 +1861,95 @@ window.setOrdersVista = function(vista){
 
 /* Exponer para onclick inline */
 window.abrirNuevaCita = abrirNuevaCita;
+
+/* ═══════════════════════════════════════════
+   SELECTOR DE CLIENTE para cita
+   ═══════════════════════════════════════════ */
+function abrirSelectorClienteCita(onSelect){
+  if(document.querySelector('#m-cita-cli-picker')) return;
+
+  const h = `
+    <div class="overlay centered open" id="m-cita-cli-picker" style="z-index:210">
+      <div class="sheet" style="position:relative;max-width:420px">
+        <button class="x" id="ccp-close">✕</button>
+        <h2>👤 Elegir cliente</h2>
+        <div class="sub">Buscá o creá uno nuevo</div>
+
+        <div class="inv-search" style="margin-top:10px">
+          <input type="text" id="ccp-search" placeholder="Buscar por nombre, cédula o teléfono..." autocomplete="off">
+        </div>
+
+        <button type="button" class="cli-picker-nuevo" id="ccp-nuevo" style="margin-top:10px">
+          ➕ Nuevo cliente
+        </button>
+
+        <div class="picker-list" id="ccp-list" style="max-height:50dvh"></div>
+      </div>
+    </div>`;
+
+  document.body.insertAdjacentHTML('beforeend', h);
+
+  const cerrar = () => document.querySelector('#m-cita-cli-picker')?.remove();
+  document.querySelector('#ccp-close').onclick = cerrar;
+  document.querySelector('#m-cita-cli-picker').onclick = e => {
+    if(e.target.id === 'm-cita-cli-picker') cerrar();
+  };
+
+  const renderLista = () => {
+    const input = document.querySelector('#ccp-search');
+    const cont = document.querySelector('#ccp-list');
+    if(!input || !cont) return;
+
+    const q = normalize(input.value || '');
+    let lista = [...(window.DB.clients || [])];
+
+    if(q){
+      lista = lista.filter(c =>
+        normalize(c.nombre).includes(q) ||
+        normalize(c.cedula || '').includes(q) ||
+        normalize(c.telefono || '').includes(q)
+      );
+    }
+
+    lista.sort((a,b) => a.nombre.localeCompare(b.nombre, 'es', {sensitivity:'base'}));
+
+    if(!lista.length){
+      cont.innerHTML = `<div class="cli-picker-vacio">${q ? 'Sin resultados' : 'Sin clientes guardados'}</div>`;
+      return;
+    }
+
+    cont.innerHTML = lista.map(c => {
+      const meta = [];
+      if(c.cedula) meta.push(esc(c.cedula));
+      if(c.telefono) meta.push(esc(c.telefono));
+      return `
+        <div class="picker-item" data-id="${c.id}">
+          <div class="picker-info">
+            <div class="picker-name">${esc(c.nombre)}</div>
+            <div class="picker-meta">${meta.join(' · ') || 'Sin datos'}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    cont.querySelectorAll('.picker-item').forEach(el => {
+      el.onclick = () => {
+        cerrar();
+        if(navigator.vibrate) navigator.vibrate(10);
+        onSelect(el.dataset.id);
+      };
+    });
+  };
+
+  document.querySelector('#ccp-search').addEventListener('input', renderLista);
+  renderLista();
+  setTimeout(() => document.querySelector('#ccp-search').focus(), 200);
+
+  document.querySelector('#ccp-nuevo').onclick = () => {
+    cerrar();
+    if(typeof openClientNew === 'function'){
+      openClientNew();
+    } else {
+      toast('⚠️ No se pudo abrir el formulario');
+    }
+  };
+}
