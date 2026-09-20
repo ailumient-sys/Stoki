@@ -7,7 +7,7 @@
     "sync": "cap sync android"
   },
   "dependencies": {
-    "@capacitor-community/image-to-text": "^6.0.1",
+    "@capacitor-mlkit/text-recognition": "^6.0.0",
     "@capacitor/android": "^6.1.2",
     "@capacitor/core": "^6.1.2",
     "@capacitor/device": "^6.0.0",

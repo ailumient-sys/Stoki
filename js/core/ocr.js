@@ -9,11 +9,8 @@ window.Ocr = (() => {
   // ───────── Plugin nativo (defensivo: prueba varios nombres) ─────────
   function getPlugin() {
     if (typeof Capacitor === 'undefined' || !Capacitor.Plugins) return null;
-    return Capacitor.Plugins.CapacitorOcr
-        || Capacitor.Plugins.Ocr
-        || Capacitor.Plugins.OCR
-        || Capacitor.Plugins.ImageToText
-        || Capacitor.Plugins.TextRecognition
+    return Capacitor.Plugins.TextRecognition
+        || Capacitor.Plugins.TextRecognitionPlugin
         || null;
   }
 
@@ -75,9 +72,8 @@ window.Ocr = (() => {
     }
 
     try {
-      const r = await plugin.detectText({ base64 });
-      const dets = (r && r.textDetections) || [];
-      const texto = dets.map(d => d && d.text).filter(Boolean).join('\n');
+      const r = await plugin.process({ image: base64 });
+      const texto = (r && r.text) || '';
       return { ok: true, texto: texto.trim(), fotoDataUrl };
     } catch (e) {
       return { ok: false, error: String(e), texto: '', fotoDataUrl };

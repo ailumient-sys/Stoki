@@ -1,3 +1,9 @@
+## 2026-09-20 — Swap OCR: Capawesome ML Kit
+
+- image-to-text v6 pedía Firebase → descartado
+- Ahora: @capacitor-mlkit/text-recognition (on-device)
+- API: processImage({ base64 })
+
 ## 2026-09-20 — Fix OCR: método correcto del plugin
 
 - `plugin.recognizeText()` → `plugin.detectText()` (API real)
