@@ -36,17 +36,27 @@ window.OcrCamara = (() => {
     if (!file) return;
 
     info('Procesando...');
+    await new Promise(r => setTimeout(r, 250));
     try {
       const r = await window.Ocr.reconocerProducto(file);
       const nombre = (r.texto || '').split('\n').map(s => s.trim()).filter(Boolean)[0] || '';
       if (onFila) onFila(r.fotoDataUrl, nombre);
-      info(nombre ? '✅ ' + nombre : 'No pude leer el nombre');
+
+      if (r.ok && nombre) {
+        info('✅ ' + nombre);
+      } else if (r.ok) {
+        info('Sin texto — escribí el nombre');
+      } else {
+        const P = (window.Capacitor && Capacitor.Plugins) || {};
+        const keys = Object.keys(P).join(', ') || '(ninguno)';
+        const hasC = !!window.Capacitor;
+        info('⚠️ ' + r.error + '<br><span style="font-size:11px;color:#9ca3af">Capacitor: ' + hasC + ' · Plugins: ' + keys + '</span>');
+      }
     } catch (err) {
-      info('Error: ' + err);
+      info('Error: ' + (err && err.message ? err.message : err));
     }
 
-    // Loop: reabrir cámara sola
-    if (activo) setTimeout(capturar, 600);
+    if (activo) setTimeout(capturar, 1800);
   }
 
   function init() {

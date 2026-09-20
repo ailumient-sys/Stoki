@@ -10,8 +10,10 @@ window.Ocr = (() => {
   function getPlugin() {
     if (typeof Capacitor === 'undefined' || !Capacitor.Plugins) return null;
     return Capacitor.Plugins.Ocr
+        || Capacitor.Plugins.OCR
         || Capacitor.Plugins.ImageToText
         || Capacitor.Plugins.ImageToTextPlugin
+        || Capacitor.Plugins.TextRecognition
         || null;
   }
 
