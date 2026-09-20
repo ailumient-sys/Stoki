@@ -9,7 +9,8 @@ window.Ocr = (() => {
   // ───────── Plugin nativo (defensivo: prueba varios nombres) ─────────
   function getPlugin() {
     if (typeof Capacitor === 'undefined' || !Capacitor.Plugins) return null;
-    return Capacitor.Plugins.CapacitorOcr
+    return Capacitor.Plugins.MLKitOCR
+        || Capacitor.Plugins.CapacitorOcr
         || Capacitor.Plugins.TextRecognition
         || null;
   }
