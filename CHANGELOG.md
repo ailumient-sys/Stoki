@@ -1,3 +1,9 @@
+## 2026-09-19 — Verificación plugin OCR
+
+- Agregado `@capacitor-community/image-to-text@^6.0.1` en dependencies
+- Build de verificación: confirma que `npx cap sync` incluye el plugin en el APK
+- Sin cambios visibles en la app (el plugin aún no se usa desde el código)
+
 # Changelog
 
 Todos los cambios importantes de Stoki, ordenados por versión.
