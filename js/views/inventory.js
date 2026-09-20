@@ -116,6 +116,7 @@ function renderInventarioAgrupado(lista){
         <div class="cat-section-header">
           <span class="cat-chevron">▶</span>
           <span>${emojiCategoria(g.id)} ${esc(g.nombre)}</span>
+          <button class="cat-add-btn" data-cat-add="${g.id}" type="button" title="Agregar varios aquí">⚡</button>
           <span class="cat-section-count">${g.items.length}</span>
         </div>
         <div class="cat-section-body">
@@ -456,9 +457,21 @@ function bindInventarioEvents(){
     }, { passive: true });
   });
 
+  /* Botón ⚡ de cada categoría */
+  document.querySelectorAll('[data-cat-add]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const catId = btn.dataset.catAdd;
+      if(typeof abrirCargaRapida === 'function'){
+        abrirCargaRapida(catId);
+      }
+    });
+  });
+
   /* Secciones desplegables de categorías */
   document.querySelectorAll('.cat-section-header').forEach(header => {
-    header.addEventListener('click', () => {
+    header.addEventListener('click', e => {
+      if(e.target.closest('[data-cat-add]')) return;
       const sec = header.closest('.cat-section');
       if(!sec) return;
       const id = sec.dataset.cat;
@@ -472,9 +485,8 @@ function bindInventarioEvents(){
   if(btnQA){
     btnQA.addEventListener('click', e => {
       e.stopPropagation();
-      if(typeof abrirQuickAdd === 'function'){
-        window.QA = { items: [] };
-        abrirQuickAdd();
+      if(typeof abrirCargaRapida === 'function'){
+        abrirCargaRapida(null);
       } else {
         toast('⚠️ Función no disponible');
       }

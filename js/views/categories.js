@@ -145,6 +145,17 @@ function abrirFormCategoria(id){
     guardarCategoria(id);
   });
 
+  /* Bind de los botones de emoji */
+  document.querySelectorAll('.emoji-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      window._emojiSeleccionado = btn.dataset.emoji;
+      document.querySelectorAll('.emoji-btn').forEach(b =>
+        b.classList.toggle('active', b === btn)
+      );
+      if(navigator.vibrate) navigator.vibrate(8);
+    });
+  });
+
   document.querySelector('#catform-nombre').addEventListener('keypress', e => {
     if(e.key === 'Enter') guardarCategoria(id);
   });

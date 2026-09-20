@@ -429,8 +429,16 @@ async function generarPDFCierre(modo, incluir){
       doc.setTextColor(...NEGRO);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8.5);
-      const desc = (m.descripcion || m.tipo).slice(0, 55);
-      doc.text(`• ${desc}`, M + 3, y);
+
+      let desc = m.descripcion || m.tipo;
+      if(m.tipo === 'merma' && m.itemNombre){
+        desc = `${m.itemNombre} — ${desc}`;
+      }
+      if(m.tipo === 'merma' && m.cantidad){
+        const u = m.unidad || 'u';
+        desc = `${fmtCantidadUnidad(m.cantidad, u)} · ${desc}`;
+      }
+      doc.text(`• ${desc.slice(0, 60)}`, M + 3, y);
 
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(...color);
