@@ -75,8 +75,9 @@ window.Ocr = (() => {
     }
 
     try {
-      const r = await plugin.recognizeText({ base64 });
-      const texto = (r && (r.text || (r.results && r.results.join(' ')))) || '';
+      const r = await plugin.detectText({ base64 });
+      const dets = (r && r.textDetections) || [];
+      const texto = dets.map(d => d && d.text).filter(Boolean).join('\n');
       return { ok: true, texto: texto.trim(), fotoDataUrl };
     } catch (e) {
       return { ok: false, error: String(e), texto: '', fotoDataUrl };

@@ -1,3 +1,8 @@
+## 2026-09-20 — Fix OCR: método correcto del plugin
+
+- `plugin.recognizeText()` → `plugin.detectText()` (API real)
+- Lee `r.textDetections[]` en vez de `r.text`
+
 ## 2026-09-20 — OCR de nombres con cámara
 
 - Módulo `js/core/ocr.js` con suavizado + resize + ML Kit
